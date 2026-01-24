@@ -1,0 +1,35 @@
+# General
+**/.DS_Store
+**/.thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django
+*.log
+*.pot
+*.pyc
+__pycache__
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Environment Variables
+.env
+.env.local
+.env.*
+
+# Virtual Environments
+venv/
+env/
+.venv/
+.env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,5 +1,0 @@
-{
-  "name": "Guard AI",
-  "description": "A sophisticated AI-driven trading companion for Forex and Crypto traders. Features volatility scanning, automated strategy execution simulations, robust risk management, and a 'Discipline Guardian' that locks trading when rules are breached.",
-  "requestFramePermissions": []
-}

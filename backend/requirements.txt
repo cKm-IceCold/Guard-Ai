@@ -1,0 +1,6 @@
+django>=5.0
+djangorestframework
+django-cors-headers
+python-dotenv
+google-generativeai
+djangorestframework-simplejwt
