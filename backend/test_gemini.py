@@ -1,5 +1,5 @@
 import os
-import google.generativeai as genai
+from google import genai
 from dotenv import load_dotenv
 
 # Load env directly
@@ -10,25 +10,29 @@ def test_gemini():
     print(f"API Key present: {bool(api_key)}")
     if api_key:
         print(f"API Key prefix: {api_key[:5]}...")
+    else:
+        print("ERROR: GEMINI_API_KEY not found in .env")
+        return
+
+    client = genai.Client(api_key=api_key)
     
-    genai.configure(api_key=api_key)
-    
-    # The model currently used in services.py
-    model_name = 'gemini-2.0-flash-lite'
-    print(f"\nTesting model used in service: {model_name}")
+    # Try the most stable one first
+    model_name = 'gemini-1.5-flash'
+    print(f"\nTesting model: {model_name}")
     
     try:
-        model = genai.GenerativeModel(model_name)
-        response = model.generate_content("Generate a 3 item trading checklist.")
-        print(f"Success! Response: {response.text}")
+        response = client.models.generate_content(
+            model=model_name,
+            contents="Hello! Generate a 3 item trading checklist."
+        )
+        print(f"SUCCESS! Response: {response.text}")
     except Exception as e:
-        print(f"CRITICAL ERROR with {model_name}: {e}")
+        print(f"FAILED with {model_name}: {e}")
         
-        print("\nListing ALL available models for this key:")
+        print("\nListing ALL available models for this key (Discovery):")
         try:
-            for m in genai.list_models():
-                if 'generateContent' in m.supported_generation_methods:
-                    print(f"- {m.name}")
+            for m in client.models.list():
+                print(f"- {m.name}")
         except Exception as list_err:
             print(f"Could not list models: {list_err}")
 

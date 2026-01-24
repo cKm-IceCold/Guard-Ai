@@ -7,7 +7,7 @@ class TradeSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Trade
-        fields = ['id', 'strategy', 'strategy_name', 'result', 'pnl', 'notes', 'followed_plan', 'created_at']
+        fields = ['id', 'strategy', 'strategy_name', 'status', 'result', 'pnl', 'notes', 'followed_plan', 'created_at']
         read_only_fields = ['id', 'created_at']
     
     def create(self, validated_data):

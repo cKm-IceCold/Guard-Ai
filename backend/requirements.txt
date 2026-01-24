@@ -2,5 +2,5 @@ django>=5.0
 djangorestframework
 django-cors-headers
 python-dotenv
-google-generativeai
+google-genai
 djangorestframework-simplejwt

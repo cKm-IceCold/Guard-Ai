@@ -1,5 +1,5 @@
 import os
-import google.generativeai as genai
+from google import genai
 from django.conf import settings
 
 class GeminiService:
@@ -8,20 +8,20 @@ class GeminiService:
         import dotenv
         dotenv.load_dotenv() # Ensure loaded in worker process
         
-        api_key = os.environ.get('GEMINI_API_KEY')
-        if not api_key:
+        self.api_key = os.environ.get('GEMINI_API_KEY')
+        if not self.api_key:
             print("WARNING: GEMINI_API_KEY not found in env.")
         
-        genai.configure(api_key=api_key)
-        # We will instantiate models on the fly to try fallbacks
+        # Using the new google-genai SDK
+        self.client = genai.Client(api_key=self.api_key)
 
     def generate_checklist(self, strategy_text):
         """
         Converts a natural language strategy into a strict checklist.
         """
         prompt = f"""
-        You are a professional Trading Algo Architect. 
-        Analyze the following trading strategy description and convert it into a strict, executable checklist.
+        You are a professional Trading AI assistant. 
+        Analyze the following trading strategy and convert it into a strict, executable checklist.
         
         Strategy Description: "{strategy_text}"
         
@@ -30,35 +30,60 @@ class GeminiService:
         Only return the JSON array, no markdown or text.
         """
         
-        # Priority list of models to try (using exact aliases from list_models)
+        # Priority list of models based on user's discovery results
         models_to_try = [
-            'gemini-2.0-flash',        # Try the powerful one first
-            'gemini-flash-latest',     # Stable alias for 1.5 Flash
-            'gemini-pro-latest',       # Stable alias for 1.0 Pro
-            'gemini-2.0-flash-lite'    # Backup
+            'gemini-2.0-flash',        # Found in discovery
+            'gemini-flash-latest',     # Found in discovery
+            'gemini-2.5-flash',        # Found in discovery (high performance)
+            'gemini-pro-latest'        # Found in discovery
         ]
 
-        for model_name in models_to_try:
+        # One-time attempt to list models if first attempt fails
+        discovery_done = False
+
+        for i, model_name in enumerate(models_to_try):
             try:
                 print(f"DEBUG: Trying Gemini Model: {model_name}...")
-                model = genai.GenerativeModel(model_name)
-                response = model.generate_content(prompt)
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=prompt
+                )
                 print(f"DEBUG: Success with {model_name}")
                 
-                # Robust cleanup
                 text = response.text.strip()
-                if text.startswith('```json'):
-                    text = text.split('```json')[1]
-                if text.startswith('```'):
-                    text = text.split('```')[1]
-                if text.endswith('```'):
-                    text = text.rsplit('```', 1)[0]
+                # Clean up potential markdown formatting
+                if '```' in text:
+                    if '```json' in text:
+                        text = text.split('```json')[1].split('```')[0]
+                    else:
+                        text = text.split('```')[1].split('```')[0]
                 
                 return text.strip()
+
             except Exception as e:
                 print(f"DEBUG: Failed with {model_name}: {e}")
-                continue # Try next model
+                
+                # Dynamic discovery if we hit failures
+                if not discovery_done and i == 0:
+                    try:
+                        print("DEBUG: Attempting model discovery...")
+                        discovered = []
+                        for m in self.client.models.list():
+                            name = m.name.replace('models/', '')
+                            if 'flash' in name or 'pro' in name:
+                                discovered.append(name)
+                        
+                        print(f"DEBUG: Discovered: {discovered}")
+                        # Filter for generation capable models and prepend them
+                        for d in reversed(discovered):
+                            if d not in models_to_try:
+                                models_to_try.insert(1, d)
+                        discovery_done = True
+                    except Exception as list_err:
+                        print(f"DEBUG: Model discovery failed: {list_err}")
+                
+                continue 
         
         # If all failed
         print("CRITICAL: All Gemini models failed.")
-        return '["System Error: AI Service Unavailable. Check backend logs."]'
+        return '["System Error: AI Service Unavailable. Please check your API key in the backend dashboard."]'

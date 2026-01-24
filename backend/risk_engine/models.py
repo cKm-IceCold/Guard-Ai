@@ -1,9 +1,11 @@
+from django.utils import timezone
+from datetime import timedelta
 from django.db import models
 from django.conf import settings
 
 class RiskProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='risk_profile')
-    max_daily_loss = models.DecimalField(max_digits=10, decimal_places=2, help_text="Maximum allowed loss per day in USD")
+    max_daily_loss = models.DecimalField(max_digits=10, decimal_places=2, default=200.00, help_text="Maximum allowed loss per day in USD")
     max_trades_per_day = models.IntegerField(default=5)
     
     # Live Tracking
@@ -13,6 +15,7 @@ class RiskProfile(models.Model):
     # Locking Mechanism
     is_locked = models.BooleanField(default=False)
     lock_reason = models.CharField(max_length=255, blank=True, null=True)
+    locked_at = models.DateTimeField(null=True, blank=True)
     last_reset_date = models.DateField(auto_now_add=True)
 
     def __str__(self):
@@ -24,6 +27,10 @@ class RiskProfile(models.Model):
         Returns (allowed: bool, reason: str)
         """
         if self.is_locked:
+            # Check if 12 hours have passed since lock
+            if self.locked_at and timezone.now() > self.locked_at + timedelta(hours=12):
+                self.reset_daily_stats()
+                return True, "Trading Allowed (Lock Expired)"
             return False, f"Account Locked: {self.lock_reason}"
             
         if self.current_daily_loss >= self.max_daily_loss:
@@ -39,6 +46,7 @@ class RiskProfile(models.Model):
     def lock_account(self, reason):
         self.is_locked = True
         self.lock_reason = reason
+        self.locked_at = timezone.now()
         self.save()
 
     def reset_daily_stats(self):
@@ -46,4 +54,5 @@ class RiskProfile(models.Model):
         self.trades_today = 0
         self.is_locked = False
         self.lock_reason = None
+        self.locked_at = None
         self.save()

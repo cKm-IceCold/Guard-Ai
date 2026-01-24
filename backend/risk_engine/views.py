@@ -14,7 +14,14 @@ class RiskProfileViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin, mix
             return self.request.user.risk_profile
         except RiskProfile.DoesNotExist:
             # Create if it doesn't exist (auto-provisioning)
-            return RiskProfile.objects.create(user=self.request.user, max_daily_loss=100.00)
+            return RiskProfile.objects.create(user=self.request.user, max_daily_loss=200.00)
+
+    def perform_update(self, serializer):
+        profile = self.get_object()
+        if profile.is_locked:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError("Changes to Risk limits are prohibited while the terminal is locked. Integrity is key.")
+        serializer.save()
 
     @action(detail=False, methods=['post'], url_path='reset-demo')
     def reset_demo(self, request):
