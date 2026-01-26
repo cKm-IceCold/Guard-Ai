@@ -1,73 +1,51 @@
-# React + TypeScript + Vite
+# 💻 Guard AI: Frontend Console
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The Guard AI Frontend is a modern, terminal-inspired trading console designed for maximum clarity and speed. It provides the interface for data-driven discipline.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## ✨ Features
 
-## React Compiler
+- **Personalized Dashboard**: Real-time asset prices (Binance API), performance summary, and live risk rule status.
+- **Strategy Lab**: AI-powered strategy generation with persistent storage.
+- **Execution Terminal**: Mandates rule validation before trade entry.
+- **Trade Journal**: A clean ledger for tracking open and closed positions.
+- **Risk Guardian**: A visual shield showing current drawdown percentage and trade frequency.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 🛠️ Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Framework**: [React](https://reactjs.org/) + [Vite](https://vitejs.dev/)
+- **Styling**: [TailwindCSS](https://tailwindcss.com/) for structural layout + Vanilla CSS for premium glassmorphism.
+- **State Management**: React Context for Global Authentication.
+- **Icons**: [Material Symbols](https://fonts.google.com/icons).
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## 🚀 Setup
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+1. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+2. **Run Development Server**:
+   ```bash
+   npm run dev
+   ```
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+3. **Production Build**:
+   ```bash
+   npm run build
+   ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
+
+## 🎨 Design Language
+
+Guard AI uses a **"High-Discipline" aesthetic**:
+- **Background**: Deep Zinc/Slate tones (`#050507`).
+- **Primary Color**: High-contrast Blue (`#3b82f6`).
+- **Alert Colors**: Success Green and Danger Red for immediate risk communication.
+- **Typography**: Clean, sans-serif fonts (Inter/Outfit) with Monospaced data displays for a professional "ledger" feel.

@@ -87,3 +87,95 @@ class GeminiService:
         # If all failed
         print("CRITICAL: All Gemini models failed.")
         return '["System Error: AI Service Unavailable. Please check your API key in the backend dashboard."]'
+
+    def run_backtest(self, strategy_description, price_data):
+        """
+        Simulates trading on historical data using the strategy.
+        price_data: list of dicts with {time, open, high, low, close}
+        """
+        prompt = f"""
+        You are a Professional Quantitative Analyst and Trading Robot.
+        
+        PART 1: STRATEGY
+        "{strategy_description}"
+        
+        PART 2: HISTORICAL PRICE DATA (100 Candles)
+        {price_data}
+        
+        TASK:
+        1. Conduct a deep analysis of the provided market history.
+        2. Identify ALL valid trade entries based on the Strategy rules.
+        3. Simulate the performance of these trades. Assume a 1:2 Risk/Reward ratio unless strategy specified otherwise.
+        4. Calculate Final Metrics: Total Profit/Loss (%), Win Rate (%), and Number of Trades.
+        
+        OUTPUT FORMAT (Strict JSON):
+        {{
+            "win_rate": 65.5,
+            "total_profit": 12.4,
+            "total_trades": 8,
+            "summary": "During this specific period, the strategy capitalized on [market condition]...",
+            "trade_log": [
+                {{"date": "2024-01-01 12:00", "type": "BUY/SELL", "price": 42000, "result": "WIN/LOSS", "pnl": 2.5}},
+                ...
+            ]
+        }}
+        Only return the JSON object. No other text.
+        """
+        
+        models_to_try = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro-latest']
+
+        for model_name in models_to_try:
+            try:
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=prompt
+                )
+                text = response.text.strip()
+                if '```' in text:
+                    text = text.split('```json')[1].split('```')[0] if '```json' in text else text.split('```')[1].split('```')[0]
+                return text.strip()
+            except Exception as e:
+                print(f"DEBUG: Backtest failed with {model_name}: {e}")
+                continue
+                
+        return '{"error": "AI Backtest Service Unavailable"}'
+
+    def extract_strategy_logic(self, strategy_description):
+        """
+        Uses Gemini to convert natural language into quantitative rules.
+        """
+        prompt = f"""
+        Analyze this trading strategy: "{strategy_description}"
+        Extract the core entry and exit logic into a structured JSON format that a computer can execute.
+        Focus on common indicators: EMA, SMA, RSI, Price Action (High/Low).
+        
+        Example Output (Strict JSON):
+        {{
+            "indicators": [
+                {{"name": "EMA", "period": 200, "id": "ema200"}},
+                {{"name": "RSI", "period": 14, "id": "rsi14"}}
+            ],
+            "entry_conditions": [
+                {{"type": "price_above", "indicator": "ema200"}},
+                {{"type": "indicator_below", "indicator": "rsi14", "value": 30}}
+            ]
+        }}
+        Only return the JSON object.
+        """
+        
+        models_to_try = ['gemini-2.0-flash', 'gemini-1.5-flash']
+
+        for model_name in models_to_try:
+            try:
+                response = self.client.models.generate_content(
+                    model=model_name,
+                    contents=prompt
+                )
+                text = response.text.strip()
+                if '```' in text:
+                    text = text.split('```json')[1].split('```')[0] if '```json' in text else text.split('```')[1].split('```')[0]
+                return text.strip()
+            except:
+                continue
+        
+        return '{ "error": "Could not extract logic" }'
