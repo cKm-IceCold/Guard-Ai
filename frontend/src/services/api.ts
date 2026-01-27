@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Centralized Axios instance for all API communication.
 const api = axios.create({
-    baseURL: 'http://localhost:8000/api', // Gateway to the Django Backend
+    baseURL: 'https://nexusverify.pythonanywhere.com/api', // Gateway to the Django Backend
     headers: {
         'Content-Type': 'application/json',
     },
@@ -35,7 +35,7 @@ api.interceptors.response.use(
                 try {
                     // Attempt to exchange the Refresh Token for a new Access Token.
                     // We use the raw 'axios' package here to avoid a recursion loop with this 'api' instance.
-                    const resp = await axios.post('http://localhost:8000/api/token/refresh/', {
+                    const resp = await axios.post('https://nexusverify.pythonanywhere.com/api/token/refresh/', {
                         refresh: refreshToken
                     });
 

@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     else if (refreshToken) {
                         try {
                             // Attempt a silent refresh to keep the user logged in seamlessly.
-                            const response = await axios.post('http://localhost:8000/api/token/refresh/', {
+                            const response = await axios.post('https://nexusverify.pythonanywhere.com/api/token/refresh/', {
                                 refresh: refreshToken
                             });
                             const { access } = response.data;
