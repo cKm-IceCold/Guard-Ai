@@ -47,6 +47,7 @@
 2.  **Run**: `npm run dev`.
 3.  **Access**: `http://localhost:5173`.
 
+
 ---
 
 ## 🔐 Security
@@ -55,5 +56,7 @@
 - **Privacy**: All logs and strategies are private to the authenticated user.
 
 ---
+## To View Demo
+visit guard-ai-five.vercel.app
 
 *Built for traders who value discipline over luck.*
