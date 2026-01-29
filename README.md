@@ -57,6 +57,6 @@
 
 ---
 ## To View Demo
-visit guard-ai-five.vercel.app
+visit https://guard-ai-five.vercel.app
 
 *Built for traders who value discipline over luck.*
