@@ -32,9 +32,8 @@ class GeminiService:
         
         # Priority list of models based on user's discovery results
         models_to_try = [
-            'gemini-2.0-flash',        # Found in discovery
+            'gemini-3-pro-preview',        # Found in discovery
             'gemini-flash-latest',     # Found in discovery
-            'gemini-2.5-flash',        # Found in discovery (high performance)
             'gemini-pro-latest'        # Found in discovery
         ]
 
@@ -122,7 +121,7 @@ class GeminiService:
         Only return the JSON object. No other text.
         """
         
-        models_to_try = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-pro-latest']
+        models_to_try = ['gemini-3-pro-preview', 'gemini-pro-latest']
 
         for model_name in models_to_try:
             try:
@@ -163,7 +162,7 @@ class GeminiService:
         Only return the JSON object.
         """
         
-        models_to_try = ['gemini-2.0-flash', 'gemini-1.5-flash']
+        models_to_try = ['gemini-3-pro-preview']
 
         for model_name in models_to_try:
             try:

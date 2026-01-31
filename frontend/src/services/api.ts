@@ -28,6 +28,12 @@ api.interceptors.response.use(
 
         // SILENT TOKEN REFRESH: If we receive a 401 (Unauthorized) and haven't tried refreshing yet.
         if (error.response?.status === 401 && !originalRequest._retry) {
+            // IGNORE LOGIN ATTEMPTS: If the 401 comes from the login endpoint itself, 
+            // it means invalid credentials, so we return the error to the component.
+            if (originalRequest.url.includes('/token/') && !originalRequest.url.includes('/token/refresh/')) {
+                return Promise.reject(error);
+            }
+
             originalRequest._retry = true;
             const refreshToken = localStorage.getItem('refresh_token');
 
