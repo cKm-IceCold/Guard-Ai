@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuthStore } from '../store/useAuthStore';
 import { journalService, riskService, priceService } from '../services/endpoints';
 
 interface Ticker {
@@ -49,7 +49,7 @@ const LockCountdown = ({ lockedAt, onComplete }: { lockedAt: string, onComplete:
 };
 
 const Dashboard = () => {
-    const { user } = useAuth();
+    const { user } = useAuthStore();
     // Ticker data for the top scrolling price bar.
     const [prices, setPrices] = useState<Ticker[]>([]);
     // Aggregated performance statistics (Journal).

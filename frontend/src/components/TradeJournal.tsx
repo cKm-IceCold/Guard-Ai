@@ -10,6 +10,9 @@ interface Trade {
     notes: string;
     followed_plan: boolean;
     created_at: string;
+    image_before: string | null;
+    image_after: string | null;
+    image_live: string | null;
 }
 
 interface Stats {
@@ -36,6 +39,11 @@ const TradeJournal = () => {
     const [closePnl, setClosePnl] = useState('0');
     const [closeNotes, setCloseNotes] = useState('');
     const [closing, setClosing] = useState(false);
+
+    // Image Upload State
+    const [imgBefore, setImgBefore] = useState<File | null>(null);
+    const [imgAfter, setImgAfter] = useState<File | null>(null);
+    const [imgLive, setImgLive] = useState<File | null>(null);
 
     useEffect(() => {
         refreshData();
@@ -83,6 +91,16 @@ const TradeJournal = () => {
      * Finalizes the trade on the backend.
      * Triggers the Risk Engine to update daily loss metrics if a LOSS is recorded.
      */
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, setter: (file: File | null) => void) => {
+        if (e.target.files && e.target.files[0]) {
+            setter(e.target.files[0]);
+        }
+    };
+
+    /**
+     * Finalizes the trade on the backend.
+     * Triggers the Risk Engine to update daily loss metrics if a LOSS is recorded.
+     */
     const handleCloseTrade = async () => {
         if (!selectedTrade) return;
         setClosing(true);
@@ -97,9 +115,15 @@ const TradeJournal = () => {
                 selectedTrade.id,
                 closeResult,
                 finalPnl,
-                closeNotes
+                closeNotes,
+                { before: imgBefore, after: imgAfter, live: imgLive }
             );
             setSelectedTrade(null);
+            setImgBefore(null);
+            setImgAfter(null);
+            setImgLive(null);
+            setCloseNotes('');
+            setClosePnl('0');
             refreshData();
         } catch (error) {
             console.error(error);
@@ -165,6 +189,55 @@ const TradeJournal = () => {
                                     placeholder="Reflection on the outcome..."
                                     className="w-full bg-[#0a0a0c] border border-[#27272a] rounded-xl px-4 py-3 text-white focus:border-primary focus:outline-none h-24 resize-none text-sm"
                                 />
+                            </div>
+
+                            {/* Image Uploads */}
+                            <div>
+                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Trade Screenshots (Max 3)</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {/* Before */}
+                                    <div className="relative">
+                                        <input
+                                            type="file"
+                                            id="img-before"
+                                            className="hidden"
+                                            onChange={(e) => handleFileChange(e, setImgBefore)}
+                                            accept="image/*"
+                                        />
+                                        <label htmlFor="img-before" className={`block w-full aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors ${imgBefore ? 'border-success bg-success/10' : 'border-[#27272a]'}`}>
+                                            <span className="material-symbols-outlined text-xl mb-1">{imgBefore ? 'check' : 'image'}</span>
+                                            <span className="text-[8px] font-bold uppercase">{imgBefore ? 'Attached' : 'Before'}</span>
+                                        </label>
+                                    </div>
+                                    {/* Live */}
+                                    <div className="relative">
+                                        <input
+                                            type="file"
+                                            id="img-live"
+                                            className="hidden"
+                                            onChange={(e) => handleFileChange(e, setImgLive)}
+                                            accept="image/*"
+                                        />
+                                        <label htmlFor="img-live" className={`block w-full aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors ${imgLive ? 'border-success bg-success/10' : 'border-[#27272a]'}`}>
+                                            <span className="material-symbols-outlined text-xl mb-1">{imgLive ? 'check' : 'bolt'}</span>
+                                            <span className="text-[8px] font-bold uppercase">{imgLive ? 'Attached' : 'Live'}</span>
+                                        </label>
+                                    </div>
+                                    {/* After */}
+                                    <div className="relative">
+                                        <input
+                                            type="file"
+                                            id="img-after"
+                                            className="hidden"
+                                            onChange={(e) => handleFileChange(e, setImgAfter)}
+                                            accept="image/*"
+                                        />
+                                        <label htmlFor="img-after" className={`block w-full aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors ${imgAfter ? 'border-success bg-success/10' : 'border-[#27272a]'}`}>
+                                            <span className="material-symbols-outlined text-xl mb-1">{imgAfter ? 'check' : 'flag'}</span>
+                                            <span className="text-[8px] font-bold uppercase">{imgAfter ? 'Attached' : 'After'}</span>
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="flex gap-3 pt-4">
@@ -239,6 +312,7 @@ const TradeJournal = () => {
                                 <th className="px-4 md:px-6 py-4 hidden sm:table-cell">Status</th>
                                 <th className="px-4 md:px-6 py-4 text-right">P&L</th>
                                 <th className="px-4 md:px-6 py-4 text-center hidden md:table-cell">Plan</th>
+                                <th className="px-4 md:px-6 py-4 text-center hidden md:table-cell">Visuals</th>
                                 <th className="px-4 md:px-6 py-4 text-center">Action</th>
                             </tr>
                         </thead>
@@ -278,6 +352,28 @@ const TradeJournal = () => {
                                             ) : (
                                                 <span className="material-symbols-outlined text-slate-700 text-lg">heart_broken</span>
                                             )}
+                                        </td>
+                                        <td className="px-4 md:px-6 py-4 text-center hidden md:table-cell">
+                                            <div className="flex justify-center -space-x-2">
+                                                {trade.image_before && (
+                                                    <a href={trade.image_before} target="_blank" rel="noopener noreferrer" className="size-6 rounded-full border border-[#27272a] bg-surface flex items-center justify-center hover:scale-110 transition-transform z-0 hover:z-10">
+                                                        <span className="material-symbols-outlined text-[10px] text-slate-400">image</span>
+                                                    </a>
+                                                )}
+                                                {trade.image_live && (
+                                                    <a href={trade.image_live} target="_blank" rel="noopener noreferrer" className="size-6 rounded-full border border-[#27272a] bg-surface flex items-center justify-center hover:scale-125 transition-transform z-0 hover:z-10">
+                                                        <span className="material-symbols-outlined text-[10px] text-slate-400">bolt</span>
+                                                    </a>
+                                                )}
+                                                {trade.image_after && (
+                                                    <a href={trade.image_after} target="_blank" rel="noopener noreferrer" className="size-6 rounded-full border border-[#27272a] bg-surface flex items-center justify-center hover:scale-125 transition-transform z-0 hover:z-10">
+                                                        <span className="material-symbols-outlined text-[10px] text-slate-400">flag</span>
+                                                    </a>
+                                                )}
+                                                {!trade.image_before && !trade.image_live && !trade.image_after && (
+                                                    <span className="text-[10px] text-slate-700">-</span>
+                                                )}
+                                            </div>
                                         </td>
                                         <td className="px-4 md:px-6 py-4 text-center">
                                             {trade.status === 'OPEN' ? (

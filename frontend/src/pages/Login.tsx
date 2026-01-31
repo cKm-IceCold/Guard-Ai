@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { authService } from '../services/endpoints';
-import { useAuth } from '../context/AuthContext';
+import { useAuthStore } from '../store/useAuthStore';
 
 const Login = () => {
     const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -8,7 +8,7 @@ const Login = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const { login } = useAuthStore();
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {

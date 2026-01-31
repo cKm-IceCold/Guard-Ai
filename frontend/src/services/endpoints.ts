@@ -57,13 +57,24 @@ export const journalService = {
         return response.data;
     },
 
-    async closeTrade(tradeId: number, result: 'WIN' | 'LOSS' | 'BREAKEVEN', pnl: number, notes: string) {
-        const response = await api.patch(`/journal/trades/${tradeId}/`, {
-            status: 'CLOSED',
-            result,
-            pnl,
-            notes
-        });
+    async closeTrade(
+        tradeId: number,
+        result: 'WIN' | 'LOSS' | 'BREAKEVEN',
+        pnl: number,
+        notes: string,
+        images?: { before?: File | null, after?: File | null, live?: File | null }
+    ) {
+        const formData = new FormData();
+        formData.append('status', 'CLOSED');
+        formData.append('result', result);
+        formData.append('pnl', pnl.toString());
+        formData.append('notes', notes);
+
+        if (images?.before) formData.append('image_before', images.before);
+        if (images?.after) formData.append('image_after', images.after);
+        if (images?.live) formData.append('image_live', images.live);
+
+        const response = await api.patch(`/journal/trades/${tradeId}/`, formData);
         return response.data;
     },
 

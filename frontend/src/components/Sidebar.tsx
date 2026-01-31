@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuthStore } from '../store/useAuthStore';
 
 interface SidebarProps {
     activeTab: string;
@@ -7,7 +7,7 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
-    const { logout } = useAuth();
+    const { logout } = useAuthStore();
     const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     const menuItems = [

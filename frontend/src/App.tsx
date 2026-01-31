@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useAuth } from './context/AuthContext';
+import { useState, useEffect } from 'react';
+import { useAuthStore } from './store/useAuthStore';
 import Login from './pages/Login';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
@@ -12,8 +12,12 @@ import ConnectBroker from './components/ConnectBroker';
 import './index.css';
 
 function App() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, initAuth } = useAuthStore();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  useEffect(() => {
+    initAuth();
+  }, []);
 
   if (isLoading) {
     return (
