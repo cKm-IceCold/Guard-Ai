@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 import { journalService, riskService, priceService } from '../services/endpoints';
+import { notify } from './NotificationProvider';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Ticker {
     symbol: string;
@@ -8,9 +10,16 @@ interface Ticker {
     priceChangePercent: string;
 }
 
+interface RecentTrade {
+    id: number;
+    result: string;
+    pnl: number;
+    created_at: string;
+    symbol?: string;
+}
+
 /**
  * LockCountdown: A specialized timer component.
- * Displays the remaining time until the terminal is "unlocked" after a risk violation.
  */
 const LockCountdown = ({ lockedAt, onComplete }: { lockedAt: string, onComplete: () => void }) => {
     const [timeLeft, setTimeLeft] = useState<string>('');
@@ -18,7 +27,6 @@ const LockCountdown = ({ lockedAt, onComplete }: { lockedAt: string, onComplete:
     useEffect(() => {
         const calculateTime = () => {
             const lockTime = new Date(lockedAt).getTime();
-            // Lock duration is exactly 12 hours from the moment of violation.
             const unlockTime = lockTime + (12 * 60 * 60 * 1000);
             const now = new Date().getTime();
             const diff = unlockTime - now;
@@ -48,208 +56,255 @@ const LockCountdown = ({ lockedAt, onComplete }: { lockedAt: string, onComplete:
     );
 };
 
+const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
+};
+
 const Dashboard = () => {
     const { user } = useAuthStore();
-    // Ticker data for the top scrolling price bar.
     const [prices, setPrices] = useState<Ticker[]>([]);
-    // Aggregated performance statistics (Journal).
     const [stats, setStats] = useState<any>(null);
-    // Real-time risk limits and current session P&L.
     const [riskProfile, setRiskProfile] = useState<any>(null);
+    const [recentTrades, setRecentTrades] = useState<RecentTrade[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    // LIVE PRICE FEED: Fetches major asset prices from our proxy backend every 5 seconds.
     useEffect(() => {
-        const fetchPrices = async () => {
-            try {
-                const data = await priceService.getPrices();
-                setPrices(data);
-            } catch (e) {
-                console.error("Price fetch error:", e);
-            }
-        };
-
+        refreshData();
         fetchPrices();
-        const interval = setInterval(fetchPrices, 5000);
-        return () => clearInterval(interval);
+        const priceInterval = setInterval(fetchPrices, 30000);
+        return () => clearInterval(priceInterval);
     }, []);
 
-    /**
-     * CORE DATA HYDRATION:
-     * Pulls the user's risk profile and performance stats from the API.
-     */
-    const fetchData = async () => {
+    const fetchPrices = async () => {
         try {
-            const [statsData, riskData] = await Promise.all([
-                journalService.getStats(),
-                riskService.getProfile()
-            ]);
-            setStats(statsData);
-            setRiskProfile(riskData);
+            const data = await priceService.getPrices();
+            if (Array.isArray(data)) {
+                setPrices(data);
+            }
         } catch (e) {
-            console.error(e);
+            console.error("Price fetch error", e);
         }
     };
 
-    // Fetch personalized stats and risk profile
-    useEffect(() => {
-        fetchData();
-    }, []);
+    const refreshData = async () => {
+        setLoading(true);
+        try {
+            const [statsData, riskData, tradesData] = await Promise.all([
+                journalService.getStats(),
+                riskService.getProfile(),
+                journalService.listTrades()
+            ]);
+            setStats(statsData);
+            setRiskProfile(riskData);
+            // Get last 5 trades
+            setRecentTrades(Array.isArray(tradesData) ? tradesData.slice(0, 5) : []);
+        } catch (error) {
+            console.error(error);
+            notify.error("Intelligence failure: Backend is unreachable.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) return (
+        <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-success"></div>
+        </div>
+    );
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700">
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="space-y-6">
+            {/* Welcome Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                        <span className="material-symbols-outlined text-primary text-4xl">grid_view</span>
-                        TRADING DASHBOARD
-                    </h2>
-                    <p className="text-slate-500 font-mono text-sm mt-1 uppercase tracking-widest">
-                        Welcome back, <span className="text-primary font-bold">{user?.email?.split('@')[0] || 'Trader'}</span>
+                    <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">
+                        {getGreeting()}, <span className="text-primary">{user?.username || 'Trader'}</span>
+                    </h1>
+                    <p className="text-slate-500 text-sm mt-1">
+                        {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                 </div>
-                <div className="flex items-center gap-3 text-xs font-mono bg-surface border border-border px-4 py-2 rounded-full shadow-lg">
-                    <div className={`size-2 rounded-full ${riskProfile?.is_locked ? 'bg-danger' : 'bg-success'} animate-pulse`}></div>
-                    <span className="text-slate-400 uppercase font-black text-[9px] tracking-widest">{riskProfile?.is_locked ? 'ACCOUNT LOCKED' : 'SYSTEM CONNECTED'}</span>
-                </div>
-            </header>
-
-            {/* Live Ticker Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {prices.length > 0 ? (
-                    prices.map(m => (
-                        <div key={m.symbol} className="p-5 glass-card rounded-2xl shadow-xl hover:border-primary/50 transition-all group relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-2 opacity-10">
-                                <span className="material-symbols-outlined text-4xl transform rotate-45">bolt</span>
-                            </div>
-                            <div className="flex justify-between items-start mb-3">
-                                <div>
-                                    <h3 className="font-black text-white group-hover:text-primary transition-colors tracking-tighter uppercase">{m.symbol.replace('USDT', '')}/USDT</h3>
-                                    <p className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded inline-block mt-1 ${parseFloat(m.priceChangePercent) >= 0 ? 'bg-success/10 text-success' : 'bg-danger/10 text-danger'}`}>
-                                        {parseFloat(m.priceChangePercent) >= 0 ? '+' : ''}{m.priceChangePercent}%
-                                    </p>
-                                </div>
-                                <span className="material-symbols-outlined text-slate-700 text-lg">trending_up</span>
-                            </div>
-                            <p className="font-mono text-xl text-slate-100 font-bold self-end leading-none">
-                                ${parseFloat(m.lastPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                        </div>
-                    ))
-                ) : (
-                    <div className="col-span-full h-24 flex items-center justify-center text-slate-700 font-mono animate-pulse uppercase text-xs tracking-widest">
-                        Initializing Encrypted Feeds...
+                <div className="flex items-center gap-3">
+                    <div className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-widest ${riskProfile?.is_locked ? 'border-danger text-danger bg-danger/5' : 'border-success text-success bg-success/5'}`}>
+                        {riskProfile?.is_locked ? '🔒 Locked' : '✓ Ready to Trade'}
                     </div>
-                )}
+                </div>
             </div>
 
-            {/* Personalized Stats Panel */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 glass-card rounded-3xl p-8 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 opacity-[0.02] -translate-y-1/4 translate-x-1/4">
-                        <span className="material-symbols-outlined text-[300px]">shield</span>
-                    </div>
-
-                    <div className="relative z-10 h-full flex flex-col justify-between">
-                        <div className="flex justify-between items-start mb-8">
-                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                                <span className="material-symbols-outlined text-primary">analytics</span>
-                                YOUR PERFORMANCE
-                            </h3>
-                            <div className="text-right">
-                                <div className={`text-[10px] mb-1 font-bold ${riskProfile?.is_locked ? 'text-danger' : 'text-success'}`}>
-                                    {riskProfile?.is_locked ? 'TRADING LOCKED' : 'TRADING ACTIVE'}
-                                </div>
-                                <div className="h-1.5 w-24 bg-slate-800 rounded-full overflow-hidden">
-                                    <div className={`h-full transition-all duration-1000 ${riskProfile?.is_locked ? 'bg-danger w-full' : 'bg-success w-1/3'}`}></div>
-                                </div>
+            {/* Real-time Ticker Bar */}
+            {prices.length > 0 && (
+                <div className="bg-[#050507] border border-white/5 rounded-xl p-3 overflow-hidden">
+                    <div className="flex gap-8 animate-marquee whitespace-nowrap">
+                        {prices.map((p, i) => (
+                            <div key={i} className="flex gap-2 items-center">
+                                <span className="text-slate-400 font-mono text-xs uppercase">{p.symbol}</span>
+                                <span className="font-bold font-mono text-white text-sm">{p.lastPrice}</span>
+                                <span className={`text-xs font-bold ${parseFloat(p.priceChangePercent) >= 0 ? 'text-success' : 'text-danger'}`}>
+                                    {parseFloat(p.priceChangePercent) >= 0 ? '▲' : '▼'} {Math.abs(parseFloat(p.priceChangePercent)).toFixed(2)}%
+                                </span>
                             </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 px-1">Win Rate</p>
-                                <p className="text-3xl md:text-4xl font-mono font-black text-white leading-none">{stats?.win_rate || '0.0'}%</p>
+                        ))}
+                        {/* Duplicate for seamless scroll */}
+                        {prices.map((p, i) => (
+                            <div key={`dup-${i}`} className="flex gap-2 items-center">
+                                <span className="text-slate-400 font-mono text-xs uppercase">{p.symbol}</span>
+                                <span className="font-bold font-mono text-white text-sm">{p.lastPrice}</span>
+                                <span className={`text-xs font-bold ${parseFloat(p.priceChangePercent) >= 0 ? 'text-success' : 'text-danger'}`}>
+                                    {parseFloat(p.priceChangePercent) >= 0 ? '▲' : '▼'} {Math.abs(parseFloat(p.priceChangePercent)).toFixed(2)}%
+                                </span>
                             </div>
-                            <div>
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 px-1">Discipline</p>
-                                <p className="text-3xl md:text-4xl font-mono font-black text-primary leading-none">{stats?.discipline_rate || '0.0'}%</p>
-                            </div>
-                            <div className="sm:col-span-2 md:col-span-1">
-                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 px-1">Total Profit</p>
-                                <p className={`text-3xl md:text-4xl font-mono font-black leading-none ${parseFloat(stats?.total_pnl || '0') >= 0 ? 'text-success' : 'text-danger'}`}>
-                                    ${stats?.total_pnl || '0.00'}
-                                </p>
-                            </div>
-                        </div>
-
-                        {(!stats || stats.total_trades === 0) && (
-                            <div className="mt-12 flex justify-center">
-                                <button
-                                    onClick={async () => {
-                                        await journalService.populateDemo();
-                                        fetchData();
-                                    }}
-                                    className="px-8 py-3 bg-primary/10 border border-primary/20 text-primary rounded-2xl text-[10px] font-black hover:bg-primary hover:text-white transition-all shadow-xl shadow-primary/5 active:scale-95"
-                                >
-                                    LOAD EXAMPLE DATA
-                                </button>
-                            </div>
-                        )}
-
-                        <div className="mt-12 pt-8 border-t border-white/5">
-                            <div className="flex items-center gap-4">
-                                <div className="flex-1 bg-slate-900/50 h-2 rounded-full overflow-hidden border border-white/5">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-primary to-indigo-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]"
-                                        style={{ width: `${stats?.discipline_rate || 0}%` }}
-                                    ></div>
-                                </div>
-                                <span className="text-[10px] font-mono text-slate-600 uppercase font-black tracking-widest">Psychology Integrity</span>
-                            </div>
-                        </div>
+                        ))}
                     </div>
                 </div>
+            )}
 
-                {/* Right Panel: Active Rules */}
-                <div className="glass-card rounded-3xl p-8 flex flex-col shadow-2xl relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-5">
-                        <span className="material-symbols-outlined text-6xl">gite</span>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Account Sentinel Status */}
+                <div className="lg:col-span-1 glass-card p-6 group">
+                    <div className="flex justify-between items-start mb-4">
+                        <h3 className="text-secondary-text uppercase tracking-widest text-xs font-bold">Sentinel Protocol</h3>
+                        <div className={`size-3 rounded-full ${riskProfile?.is_locked ? 'bg-danger animate-pulse' : 'bg-success shadow-[0_0_10px_#4ade80]'}`}></div>
                     </div>
 
-                    <h3 className="text-[10px] font-black text-white mb-6 uppercase tracking-[0.2em] flex items-center gap-2">
-                        <span className="material-symbols-outlined text-yellow-500 text-sm">security</span>
-                        Your Risk Rules
-                    </h3>
-
-                    <div className="space-y-4 flex-1">
-                        {riskProfile?.is_locked && riskProfile?.locked_at ? (
-                            <div className="p-6 bg-danger/5 border border-danger/20 rounded-2xl flex flex-col items-center justify-center text-center animate-in zoom-in-95">
-                                <span className="material-symbols-outlined text-danger mb-2 text-3xl">lock_clock</span>
-                                <p className="text-[10px] text-danger font-black uppercase tracking-widest mb-2">Cooling Down</p>
-                                <LockCountdown lockedAt={riskProfile.locked_at} onComplete={fetchData} />
+                    {riskProfile?.is_locked ? (
+                        <div className="space-y-4">
+                            <div className="p-3 bg-danger/10 border border-danger/20 rounded">
+                                <p className="text-danger text-xs uppercase font-bold mb-1">System Lockdown</p>
+                                <p className="text-secondary-text text-[10px] leading-tight">{riskProfile.lock_reason}</p>
                             </div>
-                        ) : (
-                            <div className="p-6 bg-success/5 border border-success/20 rounded-2xl flex flex-col items-center justify-center text-center">
-                                <span className="material-symbols-outlined text-success mb-2 text-3xl">verified_user</span>
-                                <p className="text-[10px] text-success font-black uppercase tracking-widest">Rules Active</p>
-                                <p className="text-xl font-mono font-black text-white mt-1">SECURED</p>
+                            <div>
+                                <p className="text-secondary-text text-[10px] uppercase font-bold mb-1">Unlock sequence in:</p>
+                                <LockCountdown lockedAt={riskProfile.locked_at} onComplete={refreshData} />
                             </div>
-                        )}
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="p-3 bg-success/10 border border-success/20 rounded">
+                                <p className="text-success text-xs uppercase font-bold mb-1">Operational</p>
+                                <p className="text-secondary-text text-[10px] leading-tight">All systems green. Risk limits within baseline.</p>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-secondary-text text-[10px] uppercase font-bold mb-1">Daily Cap</p>
+                                    <p className="text-xl font-mono font-bold text-success">{riskProfile?.trades_today}/{riskProfile?.max_trades_daily}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-secondary-text text-[10px] uppercase font-bold mb-1">P&L Status</p>
+                                    <p className={`text-xl font-mono font-bold ${riskProfile?.current_daily_pnl >= 0 ? 'text-success' : 'text-danger'}`}>
+                                        {riskProfile?.current_daily_pnl >= 0 ? '+' : ''}{riskProfile?.current_daily_pnl}%
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
 
-                        <div className="p-4 bg-[#050507] border border-border rounded-2xl">
-                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Max Daily Loss</p>
-                            <p className="text-xl font-mono font-bold text-white">${riskProfile?.max_daily_loss || '0.00'}</p>
-                        </div>
-                        <div className="p-4 bg-[#050507] border border-border rounded-2xl">
-                            <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-1">Daily Trade Cap</p>
-                            <p className="text-xl font-mono font-bold text-white">{riskProfile?.max_trades_per_day || '0'} Trades</p>
-                        </div>
+                {/* Key Metrics Grid */}
+                <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="glass-card p-6 flex flex-col justify-between">
+                        <p className="text-secondary-text uppercase tracking-widest text-[10px] font-bold">Win Probability</p>
+                        <p className="text-4xl font-mono font-black border-l-4 border-success pl-4 leading-none">{stats?.win_rate || 0}%</p>
+                        <p className="text-secondary-text text-[10px] mt-2 italic">Based on {stats?.total_trades || 0} verified entries</p>
                     </div>
-
-                    <div className="mt-8 pt-6 border-t border-border">
-                        <p className="text-[9px] text-slate-600 font-serif italic text-center px-4 leading-relaxed opacity-60">
-                            "The market is a device for transferring money from the impatient to the patient."
+                    <div className="glass-card p-6 flex flex-col justify-between">
+                        <p className="text-secondary-text uppercase tracking-widest text-[10px] font-bold">Total Gain</p>
+                        <p className={`text-4xl font-mono font-black border-l-4 pl-4 leading-none ${(stats?.total_pnl || 0) >= 0 ? 'border-success text-success' : 'border-danger text-danger'}`}>
+                            ${(stats?.total_pnl || 0).toLocaleString()}
                         </p>
+                        <p className="text-secondary-text text-[10px] mt-2 italic">Net profit after commissions</p>
+                    </div>
+                    <div className="glass-card p-6 flex flex-col justify-between">
+                        <p className="text-secondary-text uppercase tracking-widest text-[10px] font-bold">Discipline Score</p>
+                        <p className="text-4xl font-mono font-black border-l-4 border-primary pl-4 leading-none">{stats?.discipline_rate || 0}%</p>
+                        <p className="text-secondary-text text-[10px] mt-2 italic">Following your trading plan</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Recent Activity & Chart */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Recent Trades */}
+                <div className="glass-card p-6">
+                    <h3 className="text-secondary-text uppercase tracking-widest text-xs font-bold font-mono mb-4 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-primary text-lg">history</span>
+                        Recent Activity
+                    </h3>
+                    {recentTrades.length === 0 ? (
+                        <p className="text-slate-600 text-sm text-center py-8">No trades yet. Start logging!</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {recentTrades.map(trade => (
+                                <div key={trade.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`size-8 rounded-lg flex items-center justify-center ${trade.result === 'WIN' ? 'bg-success/20 text-success' : trade.result === 'LOSS' ? 'bg-danger/20 text-danger' : 'bg-yellow-500/20 text-yellow-500'}`}>
+                                            <span className="material-symbols-outlined text-sm">
+                                                {trade.result === 'WIN' ? 'trending_up' : trade.result === 'LOSS' ? 'trending_down' : 'trending_flat'}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <p className="text-white text-xs font-bold">{trade.symbol || 'Trade'}</p>
+                                            <p className="text-slate-500 text-[10px]">{new Date(trade.created_at).toLocaleDateString()}</p>
+                                        </div>
+                                    </div>
+                                    <p className={`font-mono font-bold text-sm ${(trade.pnl || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
+                                        {(trade.pnl || 0) >= 0 ? '+' : ''}{trade.pnl || 0}
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Performance Visualization */}
+                <div className="lg:col-span-2 glass-card p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h3 className="text-secondary-text uppercase tracking-widest text-xs font-bold font-mono flex items-center gap-2">
+                            <span className="material-symbols-outlined text-success text-lg">show_chart</span>
+                            Equity Curve
+                        </h3>
+                    </div>
+                    <div className="h-[250px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={stats?.daily_pnl || []}>
+                                <defs>
+                                    <linearGradient id="colorPnl" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#4ade80" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#4ade80" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                                <XAxis
+                                    dataKey="date"
+                                    stroke="#ffffff30"
+                                    tick={{ fontSize: 10 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <YAxis
+                                    stroke="#ffffff30"
+                                    tick={{ fontSize: 10 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tickFormatter={(val) => `$${val}`}
+                                />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff10', borderRadius: '8px' }}
+                                    itemStyle={{ color: '#4ade80', fontSize: '12px' }}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="pnl"
+                                    stroke="#4ade80"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#colorPnl)"
+                                    animationDuration={2000}
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             </div>

@@ -1,21 +1,50 @@
 import { useState, useEffect } from 'react';
 import { strategyService, journalService, riskService } from '../services/endpoints';
 
+interface CustomRule {
+    id: number;
+    title: string;
+    description: string;
+    image_example?: string;
+}
+
 interface Strategy {
     id: number;
     name: string;
     description: string;
     checklist_items: string[];
+    custom_rules?: CustomRule[];
+    chart_image_1?: string;
+    chart_image_2?: string;
+    chart_image_3?: string;
 }
 
+/**
+ * ExecutionMode Component
+ * 
+ * The core 'Guard' interface where trading happens.
+ * Features:
+ * 1. Strategy Selection: Choose a predefined protocol.
+ * 2. Mandatory Checklist: Users must check every AI-generated rule to 'unlock' the trade entry.
+ * 3. Terminal Protection: Integration with Risk Service to block entries if account is locked.
+ * 4. Image Reference: Side-by-side view of chart screenshots for pattern matching.
+ */
 const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
+    // SYSTEM STATE: Live connections to the Risk Engine and User Strategies.
     const [strategies, setStrategies] = useState<Strategy[]>([]);
     const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
+
+    // GUARD STATE: Tracks checklist completion. 
+    // `isUnlocked` is only true when every item in `checkedItems` is true.
     const [checkedItems, setCheckedItems] = useState<boolean[]>([]);
     const [isUnlocked, setIsUnlocked] = useState(false);
+
+    // RISK STATE: Live status of the Terminal Lock.
     const [riskStatus, setRiskStatus] = useState<{ allowed: boolean, reason?: string }>({ allowed: true });
+
     const [loading, setLoading] = useState(false);
     const [successMessage, setSuccessMessage] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     useEffect(() => {
         const init = async () => {
@@ -26,7 +55,6 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
                 ]);
                 setStrategies(stratData);
 
-                // Real-time Risk Check: Is the terminal locked?
                 if (riskProfile.is_locked) {
                     setRiskStatus({ allowed: false, reason: riskProfile.lock_reason });
                 } else if (riskProfile.trades_today >= riskProfile.max_trades_per_day) {
@@ -66,14 +94,10 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
         if (!selectedStrategy || !isUnlocked || !riskStatus.allowed) return;
         setLoading(true);
         try {
-            // Log an OPEN trade immediately. This syncs with Risk Guardian logic.
             await journalService.openTrade(selectedStrategy.id, true);
-
             setSuccessMessage(true);
             setIsUnlocked(false);
             setCheckedItems(new Array(selectedStrategy.checklist_items.length).fill(false));
-
-            // Wait 2 seconds then redirect to journal to see the open position
             setTimeout(() => {
                 onTradeLogged();
             }, 2000);
@@ -83,6 +107,14 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
             setLoading(false);
         }
     };
+
+    // Get all images (custom rules + the 3 chart screenshots)
+    const strategyImages = [
+        ...(selectedStrategy?.custom_rules?.filter(r => r.image_example).map(r => ({ url: r.image_example, title: r.title, desc: r.description })) || []),
+        ...(selectedStrategy?.chart_image_1 ? [{ url: selectedStrategy.chart_image_1, title: 'Chart Ref 1', desc: 'Primary chart setup' }] : []),
+        ...(selectedStrategy?.chart_image_2 ? [{ url: selectedStrategy.chart_image_2, title: 'Chart Ref 2', desc: 'Secondary chart setup' }] : []),
+        ...(selectedStrategy?.chart_image_3 ? [{ url: selectedStrategy.chart_image_3, title: 'Chart Ref 3', desc: 'Tertiary chart setup' }] : []),
+    ];
 
     if (!riskStatus.allowed) {
         return (
@@ -96,20 +128,31 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
                 </div>
                 <p className="text-slate-500 text-sm leading-relaxed max-w-sm mx-auto font-medium">
                     The Risk Manager has disabled trading to protect your account.
-                    Impulse control is more important than catching every move.
                 </p>
-                <div className="pt-8 border-t border-border flex justify-center">
-                    <div className="flex items-center gap-2 opacity-40">
-                        <div className="size-1.5 rounded-full bg-slate-700"></div>
-                        <p className="text-[9px] font-black text-slate-700 uppercase tracking-widest">Waiting for Cooldown</p>
-                    </div>
-                </div>
             </div>
         );
     }
 
     return (
         <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in duration-700">
+            {/* Image Modal */}
+            {selectedImage && (
+                <div
+                    className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 backdrop-blur-md cursor-pointer"
+                    onClick={() => setSelectedImage(null)}
+                >
+                    <div className="relative max-w-4xl max-h-[90vh] animate-in zoom-in-95">
+                        <img src={selectedImage} alt="Strategy Reference" className="rounded-2xl max-h-[90vh] object-contain shadow-2xl" />
+                        <button
+                            className="absolute top-4 right-4 size-10 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70"
+                            onClick={() => setSelectedImage(null)}
+                        >
+                            <span className="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
@@ -127,16 +170,12 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
                     </div>
                     <div>
                         <h4 className="font-black text-white uppercase tracking-tighter text-lg">Trade Logged</h4>
-                        <p className="text-xs text-success/70 font-bold uppercase tracking-widest">Checklist verified. Good luck with the trade!</p>
+                        <p className="text-xs text-success/70 font-bold uppercase tracking-widest">Checklist verified. Good luck!</p>
                     </div>
                 </div>
             )}
 
             <div className="glass-card rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 opacity-[0.03]">
-                    <span className="material-symbols-outlined text-9xl">hub</span>
-                </div>
-
                 <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-1">Select Your Strategy</h3>
                 <div className="flex flex-wrap gap-3 relative z-10">
                     {strategies.map((s) => (
@@ -159,11 +198,7 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
 
             {selectedStrategy && (
                 <div className="glass-card rounded-[40px] p-12 shadow-2xl relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12">
-                        <span className="material-symbols-outlined text-9xl text-slate-500 font-black">rule</span>
-                    </div>
-
-                    <div className="flex justify-between items-center mb-12 relative z-10">
+                    <div className="flex justify-between items-center mb-8 relative z-10">
                         <div>
                             <h3 className="text-2xl font-black text-white flex items-center gap-3">
                                 <span className="material-symbols-outlined text-slate-500 text-3xl">checklist</span>
@@ -171,8 +206,41 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
                             </h3>
                             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-2">Before Entering Trade</p>
                         </div>
-
                     </div>
+
+                    {/* Strategy Visual References */}
+                    {strategyImages.length > 0 && (
+                        <div className="mb-10 relative z-10">
+                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary text-lg">image</span>
+                                Visual Reference
+                            </h4>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {strategyImages.map((img, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="group/img cursor-pointer relative overflow-hidden rounded-2xl border-2 border-white/5 hover:border-primary/50 transition-all"
+                                        onClick={() => setSelectedImage(img.url!)}
+                                    >
+                                        <img
+                                            src={img.url}
+                                            alt={img.title}
+                                            className="w-full h-32 object-cover group-hover/img:scale-110 transition-transform duration-500"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity">
+                                            <div className="absolute bottom-0 left-0 right-0 p-3">
+                                                <p className="text-xs font-black text-white uppercase tracking-tight">{img.title}</p>
+                                                <p className="text-[9px] text-slate-400 line-clamp-1">{img.desc}</p>
+                                            </div>
+                                        </div>
+                                        <div className="absolute top-2 right-2 size-8 bg-black/50 rounded-lg flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
+                                            <span className="material-symbols-outlined text-white text-sm">zoom_in</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="space-y-4 max-w-3xl relative z-10">
                         {selectedStrategy.checklist_items.map((item, idx) => (
@@ -220,3 +288,4 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
 };
 
 export default ExecutionMode;
+

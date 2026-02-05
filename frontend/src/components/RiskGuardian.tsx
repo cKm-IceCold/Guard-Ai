@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { riskService, journalService } from '../services/endpoints';
+import { notify } from './NotificationProvider';
 
 const LockCountdown = ({ lockedAt, onComplete }: { lockedAt: string, onComplete: () => void }) => {
     const [timeLeft, setTimeLeft] = useState<string>('');

@@ -1,14 +1,14 @@
-import { useState } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
 
 interface SidebarProps {
     activeTab: string;
     setActiveTab: (tab: string) => void;
+    isVisible: boolean;
+    setIsVisible: (visible: boolean) => void;
 }
 
-const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
+const Sidebar = ({ activeTab, setActiveTab, isVisible, setIsVisible }: SidebarProps) => {
     const { logout } = useAuthStore();
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
 
     const menuItems = [
         { id: 'dashboard', icon: 'dashboard', label: 'Command Center' },
@@ -22,7 +22,7 @@ const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
 
     const handleTabChange = (id: string) => {
         setActiveTab(id);
-        setIsMobileOpen(false); // Auto-close on mobile
+        if (window.innerWidth < 768) setIsVisible(false); // Auto-close on mobile only
     };
 
     return (
@@ -36,30 +36,38 @@ const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
                     <span className="font-black text-white text-sm tracking-tighter italic">GUARD AI</span>
                 </div>
                 <button
-                    onClick={() => setIsMobileOpen(!isMobileOpen)}
+                    onClick={() => setIsVisible(!isVisible)}
                     className="size-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 active:scale-95 transition-all"
                 >
                     <span className="material-symbols-outlined text-white">
-                        {isMobileOpen ? 'close' : 'menu'}
+                        {isVisible ? 'close' : 'menu'}
                     </span>
                 </button>
             </div>
 
             {/* Sidebar Overlay (Mobile) */}
-            {isMobileOpen && (
+            {isVisible && (
                 <div
                     className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] md:hidden transition-opacity"
-                    onClick={() => setIsMobileOpen(false)}
+                    onClick={() => setIsVisible(false)}
                 />
             )}
 
             {/* Main Sidebar */}
             <aside className={`
-                fixed md:static inset-y-0 left-0 z-[70]
+                fixed inset-y-0 left-0 z-[70]
                 w-72 bg-[#050507] border-r border-white/5 flex flex-col h-full
-                transition-transform duration-500 ease-out
-                ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+                transition-all duration-500 ease-in-out
+                ${isVisible ? 'translate-x-0' : '-translate-x-full'}
             `}>
+                {/* Desktop/Global Toggle Button (positioned inside sidebar when open) */}
+                <button
+                    onClick={() => setIsVisible(false)}
+                    className="absolute -right-12 top-6 size-10 hidden md:flex items-center justify-center rounded-r-xl bg-[#050507] border border-l-0 border-white/5 text-slate-500 hover:text-white transition-colors"
+                >
+                    <span className="material-symbols-outlined">menu_open</span>
+                </button>
+
                 {/* Logo Section */}
                 <div className="p-8 pb-12">
                     <div className="flex items-center gap-4 group cursor-default">
@@ -115,6 +123,16 @@ const Sidebar = ({ activeTab, setActiveTab }: SidebarProps) => {
                     </div>
                 </div>
             </aside>
+
+            {/* Desktop Toggle Reveal Button (OUTSIDE aside so it's always visible) */}
+            {!isVisible && (
+                <button
+                    onClick={() => setIsVisible(true)}
+                    className="fixed left-0 top-6 size-10 hidden md:flex items-center justify-center rounded-r-xl bg-[#050507] border border-l-0 border-white/5 text-slate-500 hover:text-white transition-colors z-[80]"
+                >
+                    <span className="material-symbols-outlined">menu</span>
+                </button>
+            )}
         </>
     );
 };

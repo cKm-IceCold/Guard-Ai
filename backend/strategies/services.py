@@ -1,23 +1,68 @@
 import os
 from google import genai
+from google.genai import types
 from django.conf import settings
 
 class GeminiService:
+    """
+    Core AI Service for Guard AI.
+    Handles communication with Google's Gemini models for:
+    1. Checklist Generation: Distilling text into rules.
+    2. Backtesting: Simulating performance on data.
+    3. Logic Extraction: Converting text into quantitative parameters.
+    """
     def __init__(self):
-        # Configure API Key
         import dotenv
-        dotenv.load_dotenv() # Ensure loaded in worker process
+        # Ensure environment variables are loaded (crucial for detached worker processes)
+        dotenv.load_dotenv() 
         
         self.api_key = os.environ.get('GEMINI_API_KEY')
         if not self.api_key:
-            print("WARNING: GEMINI_API_KEY not found in env.")
+            print("WARNING: GEMINI_API_KEY not found in environment.")
         
-        # Using the new google-genai SDK
+        # Initialize Google GenAI Client
         self.client = genai.Client(api_key=self.api_key)
+        
+        # HACKATHON COMPLIANCE: Dynamically resolve Gemini 3 model identifiers.
+        # This prevents 404s if Google updates the preview name (e.g., -preview -> -v1).
+        self.models = self._resolve_gemini3_models()
+
+    def _resolve_gemini3_models(self):
+        """
+        Queries the API to find all available Gemini 3 models.
+        Strictly filters for 'gemini-3' to stay hackathon-compliant.
+        """
+        resolved = {
+            'flash': 'gemini-3-flash-preview', # Default fallbacks
+            'pro': 'gemini-3-pro-preview'
+        }
+        try:
+            print("DEBUG: Resolving Gemini 3 models for this API key...")
+            available = [m.name.replace('models/', '') for m in self.client.models.list()]
+            
+            # Look for the best Flash-equivalent in the Gemini 3 family
+            flash_models = [m for m in available if 'gemini-3' in m and 'flash' in m]
+            if flash_models:
+                resolved['flash'] = flash_models[0]
+                print(f"DEBUG: Found Gemini 3 Flash: {resolved['flash']}")
+                
+            # Look for the best Pro-equivalent in the Gemini 3 family
+            pro_models = [m for m in available if 'gemini-3' in m and 'pro' in m]
+            if pro_models:
+                resolved['pro'] = pro_models[0]
+                print(f"DEBUG: Found Gemini 3 Pro: {resolved['pro']}")
+                
+        except Exception as e:
+            print(f"WARNING: Model resolution failed: {e}. Using defaults.")
+            
+        return resolved
+
 
     def generate_checklist(self, strategy_text):
         """
-        Converts a natural language strategy into a strict checklist.
+        Takes a natural language 'trading plan' and converts it into a 
+        concise list of binary rules for the trader to follow.
+        Uses Gemini 3 Flash for low-latency rule extraction.
         """
         prompt = f"""
         You are a professional Trading AI assistant. 
@@ -30,151 +75,153 @@ class GeminiService:
         Only return the JSON array, no markdown or text.
         """
         
-        # Priority list of models based on user's discovery results
-        models_to_try = [
-            'gemini-3-pro-preview',        # Found in discovery
-            'gemini-flash-latest',     # Found in discovery
-            'gemini-pro-latest'        # Found in discovery
-        ]
-
-        # One-time attempt to list models if first attempt fails
-        discovery_done = False
-
-        for i, model_name in enumerate(models_to_try):
-            try:
-                print(f"DEBUG: Trying Gemini Model: {model_name}...")
-                response = self.client.models.generate_content(
-                    model=model_name,
-                    contents=prompt
+        try:
+            from google.genai import types
+            # Strictly using Gemini 3 for the hackathon
+            response = self.client.models.generate_content(
+                model=self.models['flash'],
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    # Using low thinking level for fast extraction of simple rules
+                    thinking_config=types.ThinkingConfig(thinking_level="low")
                 )
-                print(f"DEBUG: Success with {model_name}")
-                
-                text = response.text.strip()
-                # Clean up potential markdown formatting
-                if '```' in text:
-                    if '```json' in text:
-                        text = text.split('```json')[1].split('```')[0]
-                    else:
-                        text = text.split('```')[1].split('```')[0]
-                
-                return text.strip()
+            )
+            
+            text = response.text.strip()
+            # Remove potential AI 'chattiness' or markdown blocks
+            if '```' in text:
+                if '```json' in text:
+                    text = text.split('```json')[1].split('```')[0]
+                else:
+                    text = text.split('```')[1].split('```')[0]
+            
+            return text.strip()
 
-            except Exception as e:
-                print(f"DEBUG: Failed with {model_name}: {e}")
-                
-                # Dynamic discovery if we hit failures
-                if not discovery_done and i == 0:
-                    try:
-                        print("DEBUG: Attempting model discovery...")
-                        discovered = []
-                        for m in self.client.models.list():
-                            name = m.name.replace('models/', '')
-                            if 'flash' in name or 'pro' in name:
-                                discovered.append(name)
-                        
-                        print(f"DEBUG: Discovered: {discovered}")
-                        # Filter for generation capable models and prepend them
-                        for d in reversed(discovered):
-                            if d not in models_to_try:
-                                models_to_try.insert(1, d)
-                        discovery_done = True
-                    except Exception as list_err:
-                        print(f"DEBUG: Model discovery failed: {list_err}")
-                
-                continue 
-        
-        # If all failed
-        print("CRITICAL: All Gemini models failed.")
-        return '["System Error: AI Service Unavailable. Please check your API key in the backend dashboard."]'
+        except Exception as e:
+            print(f"CRITICAL Gemini 3 Flash Error: {e}")
+            # Log the specific error to help with hackathon troubleshooting
+            import traceback
+            traceback.print_exc()
+            return '["AI Protocol Error: Ensure Gemini 3 API access is active."]'
 
-    def run_backtest(self, strategy_description, price_data):
+    def run_backtest(self, strategy_description, history_meta, snapshots, logic_json):
         """
-        Simulates trading on historical data using the strategy.
-        price_data: list of dicts with {time, open, high, low, close}
+        Synthesizes a strategy's hypothetical performance by 
+        analyzing historical price snapshots.
         """
         prompt = f"""
-        You are a Professional Quantitative Analyst and Trading Robot.
+        You are a Systematic Trading AI.
         
-        PART 1: STRATEGY
-        "{strategy_description}"
-        
-        PART 2: HISTORICAL PRICE DATA (100 Candles)
-        {price_data}
+        {history_meta}
+        TREND SNAPSHOTS: {snapshots}
+        STRATEGY LOGIC: {logic_json}
         
         TASK:
-        1. Conduct a deep analysis of the provided market history.
-        2. Identify ALL valid trade entries based on the Strategy rules.
-        3. Simulate the performance of these trades. Assume a 1:2 Risk/Reward ratio unless strategy specified otherwise.
-        4. Calculate Final Metrics: Total Profit/Loss (%), Win Rate (%), and Number of Trades.
+        1. Project performance across this dataset.
+        2. Identify regions of success/failure.
+        3. Provide systematic results: Win Rate, Total Profit, Max Drawdown.
         
         OUTPUT FORMAT (Strict JSON):
         {{
-            "win_rate": 65.5,
-            "total_profit": 12.4,
-            "total_trades": 8,
-            "summary": "During this specific period, the strategy capitalized on [market condition]...",
-            "trade_log": [
-                {{"date": "2024-01-01 12:00", "type": "BUY/SELL", "price": 42000, "result": "WIN/LOSS", "pnl": 2.5}},
-                ...
-            ]
+            "win_rate": 00.0,
+            "total_profit": 00.0,
+            "total_trades": 00,
+            "benchmark_diff": 00.0,
+            "summary": "Full analysis shows...",
+            "trade_log": [...]
         }}
-        Only return the JSON object. No other text.
         """
         
-        models_to_try = ['gemini-3-pro-preview', 'gemini-pro-latest']
-
-        for model_name in models_to_try:
+        # Priority 1: Gemini 3 Pro (High Reasoning)
+        # Priority 2: Gemini 3 Flash (Fallback if Pro is exhausted/throttled)
+        for model_key in ['pro', 'flash']:
             try:
+                from google.genai import types
+                thinking = "high" if model_key == 'pro' else "medium"
+                
+                print(f"DEBUG: Attempting AI Backtest with {self.models[model_key]} (Thinking: {thinking})...")
                 response = self.client.models.generate_content(
-                    model=model_name,
-                    contents=prompt
+                    model=self.models[model_key],
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        thinking_config=types.ThinkingConfig(thinking_level=thinking)
+                    )
                 )
+                
                 text = response.text.strip()
                 if '```' in text:
                     text = text.split('```json')[1].split('```')[0] if '```json' in text else text.split('```')[1].split('```')[0]
                 return text.strip()
-            except Exception as e:
-                print(f"DEBUG: Backtest failed with {model_name}: {e}")
-                continue
                 
-        return '{"error": "AI Backtest Service Unavailable"}'
+            except Exception as e:
+                if "429" in str(e) and model_key == 'pro':
+                    print("WARNING: Gemini 3 Pro Quota Exhausted. Falling back to Gemini 3 Flash...")
+                    continue
+                print(f"CRITICAL Gemini 3 {model_key.upper()} Backtest Failure: {e}")
+                
+        return '{"error": "AI Backtest Fail: Both Pro and Flash exhausted. Please retry in 60s."}'
 
     def extract_strategy_logic(self, strategy_description):
         """
-        Uses Gemini to convert natural language into quantitative rules.
+        Deconstructs a text-based strategy into its specific indicator 
+        requirements and entry conditions.
         """
         prompt = f"""
         Analyze this trading strategy: "{strategy_description}"
-        Extract the core entry and exit logic into a structured JSON format that a computer can execute.
-        Focus on common indicators: EMA, SMA, RSI, Price Action (High/Low).
+        Extract the core entry/exit logic into structured JSON.
         
-        Example Output (Strict JSON):
+        Example JSON:
         {{
-            "indicators": [
-                {{"name": "EMA", "period": 200, "id": "ema200"}},
-                {{"name": "RSI", "period": 14, "id": "rsi14"}}
-            ],
-            "entry_conditions": [
-                {{"type": "price_above", "indicator": "ema200"}},
-                {{"type": "indicator_below", "indicator": "rsi14", "value": 30}}
-            ]
+            "indicators": [{{"name": "EMA", "period": 200}}],
+            "entry_conditions": [{{"type": "price_above", "indicator": "ema200"}}]
         }}
-        Only return the JSON object.
         """
         
-        models_to_try = ['gemini-3-pro-preview']
-
-        for model_name in models_to_try:
-            try:
-                response = self.client.models.generate_content(
-                    model=model_name,
-                    contents=prompt
+        try:
+            from google.genai import types
+            # Gemini 3 Flash is ideal for structured logic extraction
+            response = self.client.models.generate_content(
+                model=self.models['flash'],
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(thinking_level="medium")
                 )
-                text = response.text.strip()
-                if '```' in text:
-                    text = text.split('```json')[1].split('```')[0] if '```json' in text else text.split('```')[1].split('```')[0]
-                return text.strip()
-            except:
-                continue
+            )
+            text = response.text.strip()
+            if '```' in text:
+                text = text.split('```json')[1].split('```')[0] if '```json' in text else text.split('```')[1].split('```')[0]
+            return text.strip()
+        except Exception as e:
+            print(f"DEBUG: Gemini 3 Logic Extraction Failure: {e}")
+            return '{ "error": "Logic extraction failed: Gemini 3 required" }'
+
+    def generate_trader_bio(self, trade_summary_text):
+        """
+        Uses Gemini 3 to synthesize a professional 'Trader Bio' 
+        based on historical performance and risk metrics.
+        """
+        prompt = f"""
+        You are a Top-tier Hedge Fund Talent Scout.
+        Write a concise, professional 1-paragraph biography (max 3 sentences) for a trader 
+        based on the following performance data:
         
-        return '{ "error": "Could not extract logic" }'
+        {trade_summary_text}
+        
+        Focus on their discipline, risk management, and overall style.
+        Sound prestigious but authentic.
+        """
+        
+        try:
+            from google.genai import types
+            response = self.client.models.generate_content(
+                model=self.models['flash'],
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(thinking_level="medium")
+                )
+            )
+            return response.text.strip()
+        except Exception as e:
+            print(f"DEBUG: Bio Generation Failure: {e}")
+            return "Professional Trader utilizing Guard AI risk protocols."
+

@@ -1,18 +1,28 @@
 import { useState, useEffect } from 'react';
 import { journalService } from '../services/endpoints';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import ContributionHeatmap from './ContributionHeatmap';
 
 interface AnalyticsData {
     equity_curve: { date: string, pnl: number }[];
     discipline_trend: { date: string, score: number }[];
 }
 
+interface AIInsights {
+    impulse_alerts: string[];
+    strength_matrix: string[];
+    projected_yield: string;
+}
+
 const PsychologyDashboard = () => {
     const [data, setData] = useState<AnalyticsData | null>(null);
+    const [insights, setInsights] = useState<AIInsights | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadingAI, setLoadingAI] = useState(false);
 
     useEffect(() => {
         fetchAnalytics();
+        fetchAIInsights();
     }, []);
 
     const fetchAnalytics = async () => {
@@ -24,6 +34,18 @@ const PsychologyDashboard = () => {
             console.error("Failed to fetch analytics:", e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchAIInsights = async () => {
+        setLoadingAI(true);
+        try {
+            const aiData = await journalService.getInsights();
+            setInsights(aiData);
+        } catch (e) {
+            console.error("Failed to fetch AI insights:", e);
+        } finally {
+            setLoadingAI(false);
         }
     };
 
@@ -45,6 +67,7 @@ const PsychologyDashboard = () => {
                 onClick={async () => {
                     await journalService.populateDemo();
                     fetchAnalytics();
+                    fetchAIInsights();
                 }}
                 className="mt-4 px-6 py-2 bg-primary/10 border border-primary/20 text-primary rounded-full text-[10px] font-black hover:bg-primary hover:text-white transition-all"
             >
@@ -54,6 +77,18 @@ const PsychologyDashboard = () => {
     );
 
     const latestDiscipline = data?.discipline_trend[data.discipline_trend.length - 1]?.score || 0;
+
+    // Transform cumulative equity to daily P&L for heatmap
+    // Note: This is an approximation. Ideally backend sends grouping by date.
+    // For now we map strictly the trade dates.
+    const heatmapData = data.equity_curve.map((d, i) => {
+        const prevPnl = i > 0 ? data.equity_curve[i - 1].pnl : 0;
+        return {
+            date: d.date,
+            value: d.pnl - prevPnl,
+            count: 1
+        };
+    });
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -71,6 +106,9 @@ const PsychologyDashboard = () => {
                     </div>
                 </div>
             </header>
+
+            {/* Heatmap Section */}
+            <ContributionHeatmap data={heatmapData} />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Equity Curve */}
@@ -165,7 +203,8 @@ const PsychologyDashboard = () => {
 
             {/* Impulse Insights */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-[#050507] border border-[#27272a] p-6 rounded-3xl shadow-xl">
+                <div className="bg-[#050507] border border-[#27272a] p-6 rounded-3xl shadow-xl relative overflow-hidden">
+                    {loadingAI && <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-10"><div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 bg-yellow-500/10 rounded-lg">
                             <span className="material-symbols-outlined text-yellow-500">warning</span>
@@ -173,18 +212,17 @@ const PsychologyDashboard = () => {
                         <h4 className="text-sm font-bold text-white uppercase tracking-widest">Impulse Alerts</h4>
                     </div>
                     <ul className="space-y-3">
-                        <li className="text-[10px] text-slate-400 flex items-start gap-2">
-                            <span className="text-yellow-500 font-bold">•</span>
-                            Loss streak detected on Monday. Correlation with high coffee intake?
-                        </li>
-                        <li className="text-[10px] text-slate-400 flex items-start gap-2">
-                            <span className="text-yellow-500 font-bold">•</span>
-                            Rule bypass occurred twice at market open. Consider a 15 min wait rule.
-                        </li>
+                        {insights?.impulse_alerts.map((alert, i) => (
+                            <li key={i} className="text-[10px] text-slate-400 flex items-start gap-2">
+                                <span className="text-yellow-500 font-bold">•</span>
+                                {alert}
+                            </li>
+                        ))}
                     </ul>
                 </div>
 
-                <div className="bg-[#050507] border border-[#27272a] p-6 rounded-3xl shadow-xl">
+                <div className="bg-[#050507] border border-[#27272a] p-6 rounded-3xl shadow-xl relative overflow-hidden">
+                    {loadingAI && <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-10"><div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 bg-primary/10 rounded-lg">
                             <span className="material-symbols-outlined text-primary">verified</span>
@@ -192,25 +230,24 @@ const PsychologyDashboard = () => {
                         <h4 className="text-sm font-bold text-white uppercase tracking-widest">Strength Matrix</h4>
                     </div>
                     <ul className="space-y-3">
-                        <li className="text-[10px] text-slate-400 flex items-start gap-2">
-                            <span className="text-primary font-bold">•</span>
-                            High discipline retention (100%) when trading the "Trend Follower" protocol.
-                        </li>
-                        <li className="text-[10px] text-slate-400 flex items-start gap-2">
-                            <span className="text-primary font-bold">•</span>
-                            Consistency score improved 12% this week.
-                        </li>
+                        {insights?.strength_matrix.map((strength, i) => (
+                            <li key={i} className="text-[10px] text-slate-400 flex items-start gap-2">
+                                <span className="text-primary font-bold">•</span>
+                                {strength}
+                            </li>
+                        ))}
                     </ul>
                 </div>
 
-                <div className="bg-[#050507] border border-[#27272a] p-6 rounded-3xl shadow-xl">
+                <div className="bg-[#050507] border border-[#27272a] p-6 rounded-3xl shadow-xl relative overflow-hidden">
+                    {loadingAI && <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-10"><div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div></div>}
                     <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 bg-success/10 rounded-lg">
                             <span className="material-symbols-outlined text-success">auto_graph</span>
                         </div>
                         <h4 className="text-sm font-bold text-white uppercase tracking-widest">Expected Yield</h4>
                     </div>
-                    <p className="text-2xl font-mono font-black text-white">$1,240.00</p>
+                    <p className="text-2xl font-mono font-black text-white">{insights?.projected_yield}</p>
                     <p className="text-[9px] text-slate-500 uppercase tracking-widest mt-1">Projected Monthly Based on Discipline</p>
                 </div>
             </div>

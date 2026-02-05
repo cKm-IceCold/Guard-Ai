@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { journalService } from '../services/endpoints';
+import { notify } from './NotificationProvider';
 
 interface Trade {
     id: number;
@@ -44,6 +45,9 @@ const TradeJournal = () => {
     const [imgBefore, setImgBefore] = useState<File | null>(null);
     const [imgAfter, setImgAfter] = useState<File | null>(null);
     const [imgLive, setImgLive] = useState<File | null>(null);
+
+    // DETAIL VIEW STATE: Used to view full details of any trade.
+    const [viewingTrade, setViewingTrade] = useState<Trade | null>(null);
 
     useEffect(() => {
         refreshData();
@@ -125,8 +129,10 @@ const TradeJournal = () => {
             setCloseNotes('');
             setClosePnl('0');
             refreshData();
+            notify.success("Entry finalized. Syncing with ledger...");
         } catch (error) {
             console.error(error);
+            notify.error("Sync Failure: Database rejected the entry.");
         } finally {
             setClosing(false);
         }
@@ -141,61 +147,175 @@ const TradeJournal = () => {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
+            {/* Trade Detail Modal */}
+            {viewingTrade && (
+                <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-4 backdrop-blur-md">
+                    <div className="bg-[#0a0a0c] border border-[#27272a] rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 shadow-[0_0_50px_rgba(0,0,0,0.5)] custom-scrollbar">
+                        {/* Header */}
+                        <div className="p-8 border-b border-[#27272a] flex justify-between items-start sticky top-0 bg-[#0a0a0c]/80 backdrop-blur-md z-10">
+                            <div>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase border ${viewingTrade.status === 'OPEN'
+                                        ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                                        : viewingTrade.result === 'WIN'
+                                            ? 'bg-success/10 text-success border-success/20'
+                                            : viewingTrade.result === 'LOSS'
+                                                ? 'bg-danger/10 text-danger border-danger/20'
+                                                : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                                        }`}>
+                                        {viewingTrade.status === 'OPEN' ? 'OPEN POSITION' : viewingTrade.result}
+                                    </span>
+                                    <span className="text-slate-600 font-mono text-xs">ID: {viewingTrade.id}</span>
+                                </div>
+                                <h3 className="text-2xl font-black text-white uppercase tracking-tight">{viewingTrade.strategy_name}</h3>
+                                <p className="text-slate-500 text-sm mt-1">{new Date(viewingTrade.created_at).toLocaleString()}</p>
+                            </div>
+                            <button
+                                onClick={() => setViewingTrade(null)}
+                                className="size-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition-all"
+                            >
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Left Side: Stats & Notes */}
+                            <div className="space-y-8">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="glass-card p-4 border-[#27272a] bg-white/[0.02]">
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">P&L Status</p>
+                                        <p className={`text-2xl font-mono font-bold ${Number(viewingTrade.pnl) > 0 ? 'text-success' : Number(viewingTrade.pnl) < 0 ? 'text-danger' : 'text-white'
+                                            }`}>
+                                            {viewingTrade.status === 'OPEN' ? 'Active' : `${Number(viewingTrade.pnl) > 0 ? '+' : ''}${viewingTrade.pnl || '0.00'} USD`}
+                                        </p>
+                                    </div>
+                                    <div className="glass-card p-4 border-[#27272a] bg-white/[0.02]">
+                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Execution</p>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`material-symbols-outlined ${viewingTrade.followed_plan ? 'text-primary' : 'text-danger'}`}>
+                                                {viewingTrade.followed_plan ? 'verified' : 'error'}
+                                            </span>
+                                            <span className="text-sm font-bold text-white">
+                                                {viewingTrade.followed_plan ? 'Followed Plan' : 'Impulse Trade'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Journal Reflections</h4>
+                                    <div className="p-6 bg-white/[0.03] border border-[#27272a] rounded-2xl min-h-[120px]">
+                                        <p className="text-slate-300 italic font-serif leading-relaxed whitespace-pre-wrap">
+                                            {viewingTrade.notes || "No reflection recorded for this session."}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Right Side: Visual Evidence */}
+                            <div className="space-y-6">
+                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Visual Evidence</h4>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {viewingTrade.image_before && (
+                                        <div className="space-y-2">
+                                            <p className="text-[9px] font-bold text-slate-500 uppercase">Pre-Execution Setup</p>
+                                            <div className="rounded-2xl overflow-hidden border border-[#27272a] bg-black group relative">
+                                                <img src={viewingTrade.image_before} className="w-full h-auto object-contain max-h-[300px]" alt="Setup" />
+                                                <a href={viewingTrade.image_before} target="_blank" rel="noreferrer" className="absolute top-4 right-4 size-8 rounded-full bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <span className="material-symbols-outlined text-sm">open_in_new</span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {viewingTrade.image_live && (
+                                        <div className="space-y-2">
+                                            <p className="text-[9px] font-bold text-slate-500 uppercase">Live Market State</p>
+                                            <div className="rounded-2xl overflow-hidden border border-[#27272a] bg-black group relative">
+                                                <img src={viewingTrade.image_live} className="w-full h-auto object-contain max-h-[300px]" alt="Live" />
+                                                <a href={viewingTrade.image_live} target="_blank" rel="noreferrer" className="absolute top-4 right-4 size-8 rounded-full bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <span className="material-symbols-outlined text-sm">open_in_new</span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {viewingTrade.image_after && (
+                                        <div className="space-y-2">
+                                            <p className="text-[9px] font-bold text-slate-500 uppercase">Post-Trade Reflection</p>
+                                            <div className="rounded-2xl overflow-hidden border border-[#27272a] bg-black group relative">
+                                                <img src={viewingTrade.image_after} className="w-full h-auto object-contain max-h-[300px]" alt="Post" />
+                                                <a href={viewingTrade.image_after} target="_blank" rel="noreferrer" className="absolute top-4 right-4 size-8 rounded-full bg-black/60 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <span className="material-symbols-outlined text-sm">open_in_new</span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {!viewingTrade.image_before && !viewingTrade.image_live && !viewingTrade.image_after && (
+                                        <div className="p-12 border-2 border-dashed border-[#27272a] rounded-3xl flex flex-col items-center justify-center text-slate-700">
+                                            <span className="material-symbols-outlined text-4xl mb-2">hide_image</span>
+                                            <p className="text-xs font-bold uppercase tracking-widest">No Visual Data Captured</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Close Trade Modal */}
             {selectedTrade && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-                    <div className="bg-surface border border-[#27272a] rounded-2xl p-8 w-full max-w-md animate-in zoom-in-95 shadow-2xl">
-                        <h3 className="text-xl font-bold text-white mb-2">Close Trade Entry</h3>
-                        <p className="text-xs text-slate-500 mb-6 uppercase">Strategy: {selectedTrade.strategy_name}</p>
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-2 md:p-4 backdrop-blur-sm">
+                    <div className="bg-surface border border-[#27272a] rounded-xl md:rounded-2xl p-5 md:p-8 w-full max-w-md max-h-[95vh] overflow-y-auto animate-in zoom-in-95 shadow-2xl custom-scrollbar">
+                        <h3 className="text-lg md:text-xl font-bold text-white mb-1 md:mb-2">Close Trade Entry</h3>
+                        <p className="text-[10px] md:text-xs text-slate-500 mb-4 md:mb-6 uppercase tracking-tight">Strategy: {selectedTrade.strategy_name}</p>
 
-                        <div className="space-y-5">
+                        <div className="space-y-4 md:space-y-5">
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Outcome</label>
+                                <label className="block text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 md:mb-3">Outcome</label>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => handleResultSelect('WIN')}
-                                        className={`flex-1 py-3 rounded-xl font-black transition-all border-2 text-[10px] ${closeResult === 'WIN' ? 'border-success bg-success/10 text-success' : 'border-[#27272a] text-slate-600'
+                                        className={`flex-1 py-2.5 md:py-3 rounded-xl font-black transition-all border-2 text-[9px] md:text-[10px] ${closeResult === 'WIN' ? 'border-success bg-success/10 text-success' : 'border-[#27272a] text-slate-600'
                                             }`}
                                     >WIN</button>
                                     <button
                                         onClick={() => handleResultSelect('BREAKEVEN')}
-                                        className={`flex-1 py-3 rounded-xl font-black transition-all border-2 text-[10px] ${closeResult === 'BREAKEVEN' ? 'border-yellow-500 bg-yellow-500/10 text-yellow-500' : 'border-[#27272a] text-slate-600'
+                                        className={`flex-1 py-2.5 md:py-3 rounded-xl font-black transition-all border-2 text-[9px] md:text-[10px] ${closeResult === 'BREAKEVEN' ? 'border-yellow-500 bg-yellow-500/10 text-yellow-500' : 'border-[#27272a] text-slate-600'
                                             }`}
                                     >B.E</button>
                                     <button
                                         onClick={() => handleResultSelect('LOSS')}
-                                        className={`flex-1 py-3 rounded-xl font-black transition-all border-2 text-[10px] ${closeResult === 'LOSS' ? 'border-danger bg-danger/10 text-danger' : 'border-[#27272a] text-slate-600'
+                                        className={`flex-1 py-2.5 md:py-3 rounded-xl font-black transition-all border-2 text-[9px] md:text-[10px] ${closeResult === 'LOSS' ? 'border-danger bg-danger/10 text-danger' : 'border-[#27272a] text-slate-600'
                                             }`}
                                     >LOSS</button>
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Final P&L (USD)</label>
+                                <label className="block text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 md:mb-2">Final P&L (USD)</label>
                                 <input
                                     type="number"
                                     value={closePnl}
                                     onChange={(e) => setClosePnl(e.target.value)}
-                                    className={`w-full bg-[#0a0a0c] border border-[#27272a] rounded-xl px-4 py-3 font-mono focus:outline-none focus:border-primary ${parseFloat(closePnl) > 0 ? 'text-success' : parseFloat(closePnl) < 0 ? 'text-danger' : 'text-white'
+                                    className={`w-full bg-[#0a0a0c] border border-[#27272a] rounded-xl px-4 py-2.5 md:py-3 font-mono text-sm focus:outline-none focus:border-primary ${parseFloat(closePnl) > 0 ? 'text-success' : parseFloat(closePnl) < 0 ? 'text-danger' : 'text-white'
                                         }`}
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Notes</label>
+                                <label className="block text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 md:mb-2">Notes</label>
                                 <textarea
                                     value={closeNotes}
                                     onChange={(e) => setCloseNotes(e.target.value)}
                                     placeholder="Reflection on the outcome..."
-                                    className="w-full bg-[#0a0a0c] border border-[#27272a] rounded-xl px-4 py-3 text-white focus:border-primary focus:outline-none h-24 resize-none text-sm"
+                                    className="w-full bg-[#0a0a0c] border border-[#27272a] rounded-xl px-4 py-3 text-white focus:border-primary focus:outline-none h-20 md:h-24 resize-none text-xs md:text-sm"
                                 />
                             </div>
 
                             {/* Image Uploads */}
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Trade Screenshots (Max 3)</label>
+                                <label className="block text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 md:mb-2">Trade Screenshots (Max 3)</label>
                                 <div className="grid grid-cols-3 gap-2">
-                                    {/* Before */}
                                     <div className="relative">
                                         <input
                                             type="file"
@@ -205,11 +325,10 @@ const TradeJournal = () => {
                                             accept="image/*"
                                         />
                                         <label htmlFor="img-before" className={`block w-full aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors ${imgBefore ? 'border-success bg-success/10' : 'border-[#27272a]'}`}>
-                                            <span className="material-symbols-outlined text-xl mb-1">{imgBefore ? 'check' : 'image'}</span>
-                                            <span className="text-[8px] font-bold uppercase">{imgBefore ? 'Attached' : 'Before'}</span>
+                                            <span className="material-symbols-outlined text-lg md:text-xl mb-0.5 md:mb-1">{imgBefore ? 'check' : 'image'}</span>
+                                            <span className="text-[7px] md:text-[8px] font-bold uppercase">{imgBefore ? 'Attached' : 'Before'}</span>
                                         </label>
                                     </div>
-                                    {/* Live */}
                                     <div className="relative">
                                         <input
                                             type="file"
@@ -219,11 +338,10 @@ const TradeJournal = () => {
                                             accept="image/*"
                                         />
                                         <label htmlFor="img-live" className={`block w-full aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors ${imgLive ? 'border-success bg-success/10' : 'border-[#27272a]'}`}>
-                                            <span className="material-symbols-outlined text-xl mb-1">{imgLive ? 'check' : 'bolt'}</span>
-                                            <span className="text-[8px] font-bold uppercase">{imgLive ? 'Attached' : 'Live'}</span>
+                                            <span className="material-symbols-outlined text-lg md:text-xl mb-0.5 md:mb-1">{imgLive ? 'check' : 'bolt'}</span>
+                                            <span className="text-[7px] md:text-[8px] font-bold uppercase">{imgLive ? 'Attached' : 'Live'}</span>
                                         </label>
                                     </div>
-                                    {/* After */}
                                     <div className="relative">
                                         <input
                                             type="file"
@@ -233,22 +351,22 @@ const TradeJournal = () => {
                                             accept="image/*"
                                         />
                                         <label htmlFor="img-after" className={`block w-full aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors ${imgAfter ? 'border-success bg-success/10' : 'border-[#27272a]'}`}>
-                                            <span className="material-symbols-outlined text-xl mb-1">{imgAfter ? 'check' : 'flag'}</span>
-                                            <span className="text-[8px] font-bold uppercase">{imgAfter ? 'Attached' : 'After'}</span>
+                                            <span className="material-symbols-outlined text-lg md:text-xl mb-0.5 md:mb-1">{imgAfter ? 'check' : 'flag'}</span>
+                                            <span className="text-[7px] md:text-[8px] font-bold uppercase">{imgAfter ? 'Attached' : 'After'}</span>
                                         </label>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="flex gap-3 pt-4">
+                            <div className="flex gap-2 md:gap-3 pt-2 md:pt-4">
                                 <button
                                     onClick={() => setSelectedTrade(null)}
-                                    className="flex-1 py-3 text-slate-500 text-sm font-bold hover:text-white transition-colors"
+                                    className="flex-1 py-2.5 md:py-3 text-slate-500 text-xs md:text-sm font-bold hover:text-white transition-colors"
                                 >CANCEL</button>
                                 <button
                                     onClick={handleCloseTrade}
                                     disabled={closing}
-                                    className="flex-1 py-3 bg-primary text-white rounded-xl font-bold hover:bg-blue-600 disabled:opacity-50"
+                                    className="flex-1 py-2.5 md:py-3 bg-primary text-white rounded-xl font-bold hover:bg-blue-600 disabled:opacity-50 text-xs md:text-sm shadow-lg shadow-primary/10"
                                 >
                                     {closing ? 'CLOSING...' : 'FINALIZE ENTRY'}
                                 </button>
@@ -319,7 +437,11 @@ const TradeJournal = () => {
                         <tbody className="divide-y divide-[#27272a]">
                             {trades.length > 0 ? (
                                 trades.map((trade) => (
-                                    <tr key={trade.id} className="hover:bg-white/[0.02] transition-colors group">
+                                    <tr
+                                        key={trade.id}
+                                        onClick={() => setViewingTrade(trade)}
+                                        className="hover:bg-white/[0.02] transition-colors group cursor-pointer"
+                                    >
                                         <td className="px-4 md:px-6 py-4 text-[11px] md:text-sm text-slate-500 font-mono">
                                             {new Date(trade.created_at).toLocaleDateString()}
                                         </td>
@@ -353,7 +475,7 @@ const TradeJournal = () => {
                                                 <span className="material-symbols-outlined text-slate-700 text-lg">heart_broken</span>
                                             )}
                                         </td>
-                                        <td className="px-4 md:px-6 py-4 text-center hidden md:table-cell">
+                                        <td className="px-4 md:px-6 py-4 text-center hidden md:table-cell" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex justify-center -space-x-2">
                                                 {trade.image_before && (
                                                     <a href={trade.image_before} target="_blank" rel="noopener noreferrer" className="size-6 rounded-full border border-[#27272a] bg-surface flex items-center justify-center hover:scale-110 transition-transform z-0 hover:z-10">
@@ -378,7 +500,10 @@ const TradeJournal = () => {
                                         <td className="px-4 md:px-6 py-4 text-center">
                                             {trade.status === 'OPEN' ? (
                                                 <button
-                                                    onClick={() => setSelectedTrade(trade)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedTrade(trade);
+                                                    }}
                                                     className="bg-primary/20 text-primary hover:bg-primary hover:text-white px-3 py-1 rounded-lg text-[9px] md:text-[10px] font-black transition-all"
                                                 >CLOSE</button>
                                             ) : (

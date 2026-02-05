@@ -2,10 +2,7 @@ import axios from 'axios';
 
 // Centralized Axios instance for all API communication.
 const api = axios.create({
-    baseURL: 'https://nexusverify.pythonanywhere.com/api', // Gateway to the Django Backend
-    headers: {
-        'Content-Type': 'application/json',
-    },
+    baseURL: import.meta.env.VITE_API_URL || 'https://nexusverify.pythonanywhere.com/api',
 });
 
 // REQUEST INTERCEPTOR: Automatically attaches the JWT Access Token to every outgoing request.
@@ -41,7 +38,8 @@ api.interceptors.response.use(
                 try {
                     // Attempt to exchange the Refresh Token for a new Access Token.
                     // We use the raw 'axios' package here to avoid a recursion loop with this 'api' instance.
-                    const resp = await axios.post('https://nexusverify.pythonanywhere.com/api/token/refresh/', {
+                    const baseUrl = import.meta.env.VITE_API_URL || 'https://nexusverify.pythonanywhere.com/api';
+                    const resp = await axios.post(`${baseUrl}/token/refresh/`, {
                         refresh: refreshToken
                     });
 

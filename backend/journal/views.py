@@ -6,16 +6,26 @@ from django.db.models import Count, Sum, Avg, Q
 from .models import Trade
 from .serializers import TradeSerializer, TradeStatsSerializer
 
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
+import logging
+
+logger = logging.getLogger(__name__)
+
 class TradeViewSet(viewsets.ModelViewSet):
     """
     Main ViewSet for managing trading activity.
-    Handles trade creation, closure, and synchronization with the Risk Guardian.
+    Handles trade creation, closure, and synchronization with the Risk Engine.
+    Includes advanced actions for performance analytics and AI-driven behavioral analysis.
     """
     serializer_class = TradeSerializer
     permission_classes = [IsAuthenticated]
+    parser_classes = [JSONParser, MultiPartParser, FormParser]
     
     def get_queryset(self):
-        """Filters trades by the authenticated user and optionally by strategy."""
+        """
+        Filters trades by the authenticated user.
+        Accepts '?strategy=<id>' as a query parameter to filter by a specific strategy.
+        """
         queryset = Trade.objects.filter(user=self.request.user)
         strategy_id = self.request.query_params.get('strategy')
         if strategy_id:
@@ -24,45 +34,58 @@ class TradeViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """
-        Executed when a trade is opened.
-        Communicates with the Risk Engine to increment the daily trade count.
+        Executed when a new trade is opened.
+        1. Saves the trade to the database.
+        2. Updates the Risk Engine profile with the latest trade count.
+        3. Scans for potential 'over-trading' limit violations.
         """
-        # Commit the trade to the database.
         trade = serializer.save(user=self.request.user)
         
-        # RISK INTEGRATION: Track this new trade in the user's daily activity.
+        # Risk Sync: Update activity counters
         profile = self.request.user.risk_profile
         profile.trades_today += 1
+        profile.trades_this_month += 1
+        profile.trades_this_year += 1
         
-        # Check if this new trade causes a terminal lock (over-trading violation).
+        # Enforcement: Check if this trade triggers a terminal lockout
         profile.check_discipline()
         profile.save()
 
+    def update(self, request, *args, **kwargs):
+        """Override update to provide detailed error logging for debugging."""
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        if not serializer.is_valid():
+            logger.error(f"Trade Update Validation Error: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
     def perform_update(self, serializer):
         """
-        Executed when a trade is modified (typically closed).
-        Updates the Risk Guardian with any incurred losses.
+        Executed when a trade is updated (typically when closed).
+        Logs losses to the Risk Engine to enforce daily drawdown limits.
         """
-        # Record the pre-update state to detect if a trade is transitioning to CLOSED.
         old_status = self.get_object().status
         trade = serializer.save()
         
-        # If the trade was just closed, sync the P&L with the Risk Engine.
+        # Trigger risk check only upon trade closure
         if old_status == 'OPEN' and trade.status == 'CLOSED':
-            # Only sync losses to the daily loss limit (wins are a bonus).
             if trade.result == 'LOSS' and trade.pnl:
                 profile = self.request.user.risk_profile
-                # Add the absolute loss amount to the daily counter.
+                # Record absolute loss for drawdown calculation
                 profile.current_daily_loss += abs(trade.pnl)
-                # Re-verify if this loss triggers a terminal lock.
+                # Re-evaluate locking status
                 profile.check_discipline()
                 profile.save()
     
     @action(detail=False, methods=['get'])
     def stats(self, request):
         """
-        Calculates high-level performance metrics (Win Rate, P&L, Discipline).
-        Provides the data for the 'Command Center' dashboard cards.
+        Returns high-level performance KPIs.
+        Calculates Win Rate, Total PnL, Average R/R, and 'Discipline Score'.
+        Used for dashboard metrics.
         """
         queryset = self.get_queryset()
         
@@ -75,7 +98,7 @@ class TradeViewSet(viewsets.ModelViewSet):
         avg_win = queryset.filter(result='WIN').aggregate(avg=Avg('pnl'))['avg']
         avg_loss = queryset.filter(result='LOSS').aggregate(avg=Avg('pnl'))['avg']
         
-        # Discipline Score: % of trades where the user followed their predefined rules.
+        # Discipline Score: Percent of trades that didn't violate the AI checklist
         disciplined_trades = queryset.filter(followed_plan=True).count()
         discipline_rate = (disciplined_trades / total * 100) if total > 0 else 0
         
@@ -95,7 +118,9 @@ class TradeViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def analytics(self, request):
         """
-        Generates time-series data for performance charts (Equity Curve & Discipline Trend).
+        Returns time-series data for front-end charts.
+        - `equity_curve`: Cumulative PnL over time.
+        - `discipline_trend`: A 5-trade rolling average of checklist compliance.
         """
         trades = self.get_queryset().filter(status='CLOSED').order_by('created_at')
         
@@ -104,7 +129,6 @@ class TradeViewSet(viewsets.ModelViewSet):
         discipline_trend = []
         
         for i, trade in enumerate(trades):
-            # Calculate cumulative P&L for the growth chart.
             running_pnl += float(trade.pnl or 0)
             equity_curve.append({
                 'id': trade.id,
@@ -112,7 +136,7 @@ class TradeViewSet(viewsets.ModelViewSet):
                 'pnl': running_pnl
             })
             
-            # Calculate a rolling moving average of discipline over the last 5 trades.
+            # Discipline MA-5
             recent_trades = trades[:i+1]
             if len(recent_trades) > 5:
                 recent_trades = recent_trades[len(recent_trades)-5:]
@@ -134,22 +158,21 @@ class TradeViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='populate-demo')
     def populate_demo(self, request):
         """
-        Diagnostic Tool: Generates 20 mock trades to visualize charts and dashboard.
-        Deletes all existing trades for the user before creation.
+        Utility: Populates the account with 20 historical trades.
+        Useful for presentation and testing chart rendering.
         """
         from strategies.models import Strategy
         import random
         from django.utils import timezone
         from datetime import timedelta
 
-        # Ensure a default strategy exists to link the mock trades.
         strategy, _ = Strategy.objects.get_or_create(
             user=request.user,
             name="Alpha Trend Protocol",
             defaults={'description': 'Main trend following system'}
         )
 
-        Trade.objects.filter(user=request.user).delete() # Purge existing data
+        Trade.objects.filter(user=request.user).delete()
         now = timezone.now()
         
         for i in range(20):
@@ -162,7 +185,7 @@ class TradeViewSet(viewsets.ModelViewSet):
                 status='CLOSED',
                 result=result,
                 pnl=pnl,
-                followed_plan=random.random() > 0.2, # Simulates 80% natural discipline.
+                followed_plan=random.random() > 0.2,
                 created_at=now - timedelta(days=20-i)
             )
             
@@ -171,7 +194,8 @@ class TradeViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='full-reset')
     def full_reset(self, request):
         """
-        Nuclear Reset: Deletes ALL user data (strategies and trades) and resets risk limits.
+        Nuclear Reset: Deletes all trades and strategies for the user.
+        Also resets all Risk Engine counters (Daily/Monthly/Yearly trade counts).
         """
         from strategies.models import Strategy
         from risk_engine.models import RiskProfile
@@ -179,8 +203,37 @@ class TradeViewSet(viewsets.ModelViewSet):
         Trade.objects.filter(user=request.user).delete()
         Strategy.objects.filter(user=request.user).delete()
         
-        # Reset the Risk Engine counters so the user can start from a clean slate.
         profile, _ = RiskProfile.objects.get_or_create(user=request.user)
         profile.reset_daily_stats()
         
         return Response({'status': 'Account reset complete'})
+
+    @action(detail=False, methods=['get'])
+    def insights(self, request):
+        """
+        Behavioral AI Insights.
+        1. Fetches the last 30 trades.
+        2. Formats them into a simplified log.
+        3. Uses the AI Service to detect patterns like 'revenge trading' or 
+           'impulsive entries' the trader might have missed.
+        """
+        from core.ai_service import ai_service
+        
+        trades = self.get_queryset().order_by('-created_at')[:30]
+        if not trades:
+             return Response({
+                "impulse_alerts": ["Insufficient data to perform behavioral analysis."], 
+                "strength_matrix": ["Log at least 5 trades to unlock AI psych analysis."], 
+                "projected_yield": "Unknown"
+            })
+
+        # Process log for AI consumption
+        trade_data = "Date | Strategy | Result | PnL | Followed Plan | Notes\n"
+        for t in trades:
+            strategy_name = t.strategy.name if t.strategy else "Unknown"
+            trade_data += f"{t.created_at.date()} | {strategy_name} | {t.result} | {t.pnl} | {t.followed_plan} | {t.notes}\n"
+            
+        # Analysis triggered via core.ai_service
+        analysis = ai_service.analyze_behavior(trade_data)
+        return Response(analysis)
+

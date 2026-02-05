@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { authService } from '../services/endpoints';
 import { useAuthStore } from '../store/useAuthStore';
+import { notify } from '../components/NotificationProvider';
 
 const Login = () => {
     const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -25,8 +26,11 @@ const Login = () => {
                 const data = await authService.login(email, password);
                 login(data.access, data.refresh);
             }
+            notify.success(mode === 'login' ? "Access Granted. Welcome back." : "Registration Successful.");
         } catch (err: any) {
-            setError(mode === 'login' ? 'ACCESS DENIED: INVALID CREDENTIALS' : 'REGISTRATION FAILED: USE A UNIQUE EMAIL/USERNAME');
+            const msg = err.response?.data?.detail || err.response?.data?.error || "Connection failed. System offline.";
+            setError(msg);
+            notify.error(msg);
         } finally {
             setLoading(false);
         }

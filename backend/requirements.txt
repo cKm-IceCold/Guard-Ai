@@ -1,7 +1,21 @@
-django>=5.0
-djangorestframework
-django-cors-headers
-python-dotenv
-google-genai
-djangorestframework-simplejwt
-psycopg2-binary
+django>=5.0.0
+# Core Frameworks
+djangorestframework>=3.14.0
+django-cors-headers>=4.3.1
+djangorestframework-simplejwt>=5.3.1
+
+# AI & Data
+google-genai>=0.4.0
+numpy>=1.26.0
+
+pandas>=2.1.0
+yfinance>=0.2.35
+
+
+
+# Utilities
+python-dotenv>=1.0.0
+requests>=2.31.0
+pillow>=10.2.0  # Required for ImageField
+
+

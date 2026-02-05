@@ -14,6 +14,7 @@ class User(AbstractUser):
     Uses email as the unique identifier for authentication.
     """
     email = models.EmailField(unique=True)
+    bio = models.TextField(blank=True, help_text="AI-generated or user-defined trading bio")
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']

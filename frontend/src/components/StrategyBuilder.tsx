@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
 import { strategyService } from '../services/endpoints';
+import { notify } from './NotificationProvider';
+import { useAuthStore } from '../store/useAuthStore';
+import CustomRuleList from './CustomRuleList';
 
 interface Strategy {
     id: number;
     name: string;
     description: string;
     checklist_items: string[];
+    chart_image_1?: string;
+    chart_image_2?: string;
+    chart_image_3?: string;
+    is_public: boolean;
     created_at: string;
 }
 
@@ -17,19 +24,39 @@ const TRADING_QUOTES = [
     "\"Simplicity is the ultimate sophistication.\" — Leonardo da Vinci"
 ];
 
+/**
+ * StrategyBuilder Component
+ * 
+ * The 'Strategy Lab' of the application. 
+ * Allows users to:
+ * 1. Define a trading strategy in natural language.
+ * 2. Use AI (Gemini) to distill that strategy into a binary checklist.
+ * 3. Run historical simulations (backtests) powered by AI.
+ * 4. Manage visual references (Chart Screenshots & Rule Patterns).
+ */
 const StrategyBuilder = () => {
-    // FORM STATE: The user's description of their trading rules.
+    /** 
+     * FORM STATE: Capture's the trader's plan.
+     * `description` is the most important field as it's the source for AI analysis.
+     */
     const [description, setDescription] = useState('');
     const [strategyName, setStrategyName] = useState('');
     const [loading, setLoading] = useState(false);
 
-    // PROTOCOL STATE: The checklist items generated from the AI analysis.
+    /** 
+     * PROTOCOL STATE: Manages the 'Source of Truth' for the strategy.
+     * `checklist` stores the AI-generated rules that appear in Execution mode.
+     */
     const [checklist, setChecklist] = useState<string[]>([]);
     const [savedStrategies, setSavedStrategies] = useState<Strategy[]>([]);
     const [selectedStrategy, setSelectedStrategy] = useState<Strategy | null>(null);
 
-    // UI STATE: UX elements like the focus modal and quotes.
+    /** 
+     * UI STATE: Enhances UX with feedback and guardrails.
+     * `showLimitModal` enforces the 'Rule of 3' (max 3 strategies per user).
+     */
     const [showLimitModal, setShowLimitModal] = useState(false);
+
     const [quoteTip, setQuoteTip] = useState('');
     const [isEditing, setIsEditing] = useState(false);
     const [editedChecklist, setEditedChecklist] = useState<string[]>([]);
@@ -38,6 +65,10 @@ const StrategyBuilder = () => {
     // BACKTEST STATE: Performance simulations on historical data.
     const [backtestResult, setBacktestResult] = useState<any>(null);
     const [backtesting, setBacktesting] = useState(false);
+
+    // CHART IMAGES STATE: Screenshots showing strategy on chart.
+    const [chartImages, setChartImages] = useState<File[]>([]);
+    const [uploadingImages, setUploadingImages] = useState(false);
 
     useEffect(() => {
         fetchStrategies();
@@ -52,6 +83,7 @@ const StrategyBuilder = () => {
             setSavedStrategies(data);
         } catch (error) {
             console.error("Failed to fetch strategies:", error);
+            notify.error("Intelligence failure: Could not load strategems.");
         }
     };
 
@@ -101,13 +133,14 @@ const StrategyBuilder = () => {
         setBacktesting(true);
         setBacktestResult(null);
         try {
-            const result = await strategyService.backtest(selectedStrategy.id);
-            setBacktestResult(result);
+            const results = await strategyService.backtest(selectedStrategy.id);
+            setBacktestResult(results); // Assuming setBacktestResult is the correct setter for backtest data
+            notify.success("Intelligence Sweep Complete.");
         } catch (error) {
-            console.error("Backtest failed:", error);
-            alert("AI Backtest Robot encountered an error. Check logs.");
+            console.error(error);
+            notify.error("Backtest failed: Market simulation interrupted.");
         } finally {
-            setBacktesting(false);
+            setBacktesting(false); // Keeping setBacktesting as per original state variable
         }
     };
 
@@ -124,10 +157,27 @@ const StrategyBuilder = () => {
             setChecklist(updated.checklist_items);
             setSavedStrategies(prev => prev.map(s => s.id === updated.id ? updated : s));
             setIsEditing(false);
+            notify.success("Protocol updated.");
         } catch (error) {
             console.error("Failed to save checklist:", error);
+            notify.error("Failed to save protocol.");
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleTogglePublic = async () => {
+        if (!selectedStrategy) return;
+        try {
+            const updated = await strategyService.update(selectedStrategy.id, {
+                is_public: !selectedStrategy.is_public
+            });
+            setSelectedStrategy(updated);
+            setSavedStrategies(prev => prev.map(s => s.id === updated.id ? updated : s));
+            notify.success(updated.is_public ? "Strategy is now PUBLIC." : "Strategy is now PRIVATE.");
+        } catch (error) {
+            console.error("Failed to toggle public status:", error);
+            notify.error("Failed to change visibility.");
         }
     };
 
@@ -169,7 +219,41 @@ const StrategyBuilder = () => {
         setDescription(strategy.description);
         setStrategyName(strategy.name);
         setIsEditing(false);
+        setChartImages([]);
     };
+
+    const handleChartImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        const allowed = files.slice(0, 3 - chartImages.length);
+        setChartImages([...chartImages, ...allowed]);
+    };
+
+    const handleRemoveChartImage = (idx: number) => {
+        setChartImages(chartImages.filter((_, i) => i !== idx));
+    };
+
+    const handleUploadChartImages = async () => {
+        if (!selectedStrategy || chartImages.length === 0) return;
+        setUploadingImages(true);
+        try {
+            await strategyService.uploadChartImages(selectedStrategy.id, chartImages);
+            notify.success(`${chartImages.length} chart image(s) uploaded!`);
+            setChartImages([]);
+            fetchStrategies();
+        } catch (error) {
+            console.error(error);
+            notify.error('Failed to upload images');
+        } finally {
+            setUploadingImages(false);
+        }
+    };
+
+    // Get existing chart images from selected strategy
+    const existingImages = selectedStrategy ? [
+        selectedStrategy.chart_image_1,
+        selectedStrategy.chart_image_2,
+        selectedStrategy.chart_image_3
+    ].filter(Boolean) : [];
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700 max-w-6xl mx-auto">
@@ -277,8 +361,33 @@ const StrategyBuilder = () => {
                                         placeholder="E.g. Moving Average Crossover..."
                                     />
                                 </div>
-                                <div className="flex items-end pb-3">
-                                    <p className="text-[9px] text-slate-600 italic font-serif">Give your strategy a clear name.</p>
+                                <div className="flex flex-col justify-end pb-1">
+                                    {selectedStrategy && (
+                                        <div className="flex items-center justify-between bg-white/[0.03] border border-white/5 p-3 rounded-2xl">
+                                            <div>
+                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Public Sharing</p>
+                                                <p className="text-[10px] text-slate-400 mt-0.5">{selectedStrategy.is_public ? 'Active on Profile' : 'Private'}</p>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                {selectedStrategy.is_public && (
+                                                    <a
+                                                        href={`/u/${useAuthStore.getState().user?.username}`}
+                                                        target="_blank"
+                                                        className="size-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center hover:bg-indigo-500/20 transition-all border border-indigo-500/20"
+                                                        title="View Public Profile"
+                                                    >
+                                                        <span className="material-symbols-outlined">visibility</span>
+                                                    </a>
+                                                )}
+                                                <button
+                                                    onClick={handleTogglePublic}
+                                                    className={`size-10 rounded-xl flex items-center justify-center transition-all ${selectedStrategy.is_public ? 'bg-success text-white shadow-lg shadow-success/20' : 'bg-slate-800 text-slate-500'}`}
+                                                >
+                                                    <span className="material-symbols-outlined">{selectedStrategy.is_public ? 'public' : 'public_off'}</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -467,7 +576,75 @@ const StrategyBuilder = () => {
                                     </div>
                                 </div>
                             )}
+                            {/* Chart Screenshots Section */}
+                            <div className="mt-10 space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                        <span className="material-symbols-outlined text-primary text-lg">insert_photo</span>
+                                        How It Looks on Chart
+                                    </h3>
+                                    <span className="text-[10px] text-slate-500 font-bold uppercase">{existingImages.length + chartImages.length}/3 Images</span>
+                                </div>
+
+                                <p className="text-[10px] text-slate-600 italic">Upload up to 3 screenshots showing what your strategy looks like on the chart.</p>
+
+                                {/* Existing Images */}
+                                <div className="grid grid-cols-3 gap-4">
+                                    {existingImages.map((img, idx) => (
+                                        <div key={idx} className="relative group rounded-2xl overflow-hidden border-2 border-white/10 hover:border-primary/50 transition-all">
+                                            <img src={img as string} alt={`Chart ${idx + 1}`} className="w-full h-28 object-cover group-hover:scale-105 transition-transform duration-500" />
+                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                <span className="text-[10px] text-white font-bold uppercase">Saved</span>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* New Images to Upload */}
+                                    {chartImages.map((file, idx) => (
+                                        <div key={`new-${idx}`} className="relative group rounded-2xl overflow-hidden border-2 border-primary/50">
+                                            <img src={URL.createObjectURL(file)} alt={`New ${idx + 1}`} className="w-full h-28 object-cover" />
+                                            <button
+                                                onClick={() => handleRemoveChartImage(idx)}
+                                                className="absolute top-2 right-2 size-6 bg-danger rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <span className="material-symbols-outlined text-white text-sm">close</span>
+                                            </button>
+                                            <div className="absolute bottom-0 left-0 right-0 bg-primary/90 py-1 text-center">
+                                                <span className="text-[9px] text-white font-bold uppercase">New</span>
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {/* Add New Button */}
+                                    {existingImages.length + chartImages.length < 3 && (
+                                        <label className="cursor-pointer group">
+                                            <div className="h-28 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center gap-2 group-hover:border-primary/50 transition-all">
+                                                <span className="material-symbols-outlined text-slate-600 group-hover:text-primary text-2xl">add_photo_alternate</span>
+                                                <span className="text-[9px] text-slate-600 group-hover:text-primary font-bold uppercase">Add Image</span>
+                                            </div>
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handleChartImageSelect}
+                                            />
+                                        </label>
+                                    )}
+                                </div>
+
+                                {/* Upload Button */}
+                                {chartImages.length > 0 && (
+                                    <button
+                                        onClick={handleUploadChartImages}
+                                        disabled={uploadingImages}
+                                        className="w-full py-3 bg-primary text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-opacity-90 transition-all disabled:opacity-50"
+                                    >
+                                        {uploadingImages ? 'Uploading...' : `Upload ${chartImages.length} Image${chartImages.length > 1 ? 's' : ''}`}
+                                    </button>
+                                )}
+                            </div>
                         </div>
+
                     )}
                 </div>
             </div>
