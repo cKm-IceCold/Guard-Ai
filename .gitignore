@@ -1,7 +1,10 @@
 # Environment Variables
 .env
 .env.local
-.env.*
+.env.development
+.env.test
+.env.production
+!.env.example
 
 # Python/Django
 __pycache__/
