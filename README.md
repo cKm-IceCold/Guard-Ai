@@ -11,7 +11,6 @@
 
 ## 🤖 Gemini 3 Integration (Hackathon Showcase)
 
-<<<<<<< HEAD
 Guard AI is built from the ground up to leverage the **Gemini 3 series**, utilizing advanced reasoning depths to solve complex financial psychology problems.
 
 ### 1. Dynamic Model Resolution Engine
@@ -25,12 +24,6 @@ We've implemented an intelligent resolution layer that automatically detects and
 ### 3. AI Behavioral Synthesis (Social Layer)
 *   **Model**: Gemini 3 Flash (Thinking Level: MEDIUM)
 *   **Bio Generation**: The terminal analyze verified performance data (win rate, discipline score, profit) to write a professional "Trader Biography." It turns raw data into a prestigious narrative for social sharing.
-=======
--   **Frontend**: React + Vite + Vanilla CSS. Premium financial terminal aesthetic with mobile-first responsiveness.
--   **Backend**: Django REST Framework (DRF) + Supabase (PostgreSQL).
--   **AI Integration**: Google Gemini 3 for natural language strategy synthesis.
--   **Market Connectivity**: CCXT (Crypto) and MetaTrader 5 (Forex) integration for live trade syncing.
->>>>>>> 3b8c57ba92aaea58021e96b16c0a17c581bf218d
 
 ---
 
