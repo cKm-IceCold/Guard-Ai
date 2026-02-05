@@ -8,7 +8,7 @@
 
 -   **Frontend**: React + Vite + Vanilla CSS. Premium financial terminal aesthetic with mobile-first responsiveness.
 -   **Backend**: Django REST Framework (DRF) + Supabase (PostgreSQL).
--   **AI Integration**: Google Gemini (Flash 1.5/2.0) for natural language strategy synthesis.
+-   **AI Integration**: Google Gemini 3 for natural language strategy synthesis.
 -   **Market Connectivity**: CCXT (Crypto) and MetaTrader 5 (Forex) integration for live trade syncing.
 
 ---
