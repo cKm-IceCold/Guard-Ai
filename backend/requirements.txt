@@ -17,5 +17,7 @@ yfinance>=0.2.35
 python-dotenv>=1.0.0
 requests>=2.31.0
 pillow>=10.2.0  # Required for ImageField
+cryptography>=42.0.0 # Required for API Key encryption
+ccxt>=4.2.0 # Required for broker sync
 
 
