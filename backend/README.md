@@ -13,7 +13,7 @@ Handles the Custom User model and Authentication.
 ### 2. `strategies`
 The AI Integration layer.
 - **AI Engine**: Connects to Google Gemini.
-- **Service Layer**: Implements a **Multi-Model Fallback** in `services.py`. It attempts to use `gemini-2.0-flash` first, falling back to `gemini-pro` if rate-limited or unavailable.
+- **Service Layer**: Implements a **Multi-Model Fallback** in `services.py`. It attempts to use `gemini-3` first, falling back to `gemini-pro` if rate-limited or unavailable.
 
 ### 3. `risk_engine`
 The live enforcement module.
