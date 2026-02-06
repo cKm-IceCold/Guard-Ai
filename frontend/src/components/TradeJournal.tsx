@@ -141,7 +141,7 @@ const TradeJournal = () => {
     if (loading && !stats) return (
         <div className="h-96 flex flex-col items-center justify-center p-8 text-center bg-surface border border-border rounded-2xl">
             <div className="size-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-sm text-slate-500 font-mono uppercase">Syncing Ledger...</p>
+            <p className="text-sm text-text-dim font-mono uppercase">Syncing Ledger...</p>
         </div>
     );
 
@@ -150,7 +150,7 @@ const TradeJournal = () => {
             {/* Trade Detail Modal */}
             {viewingTrade && (
                 <div className="fixed inset-0 bg-background/90 flex items-center justify-center z-[100] p-4 backdrop-blur-md">
-                    <div className="bg-[#0a0a0c] border border-border rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 shadow-[0_0_50px_rgba(0,0,0,0.5)] custom-scrollbar">
+                    <div className="bg-background border border-border rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 shadow-[0_0_50px_rgba(0,0,0,0.5)] custom-scrollbar">
                         {/* Header */}
                         <div className="p-8 border-b border-border flex justify-between items-start sticky top-0 bg-background/80 backdrop-blur-md z-10">
                             <div>
@@ -161,18 +161,18 @@ const TradeJournal = () => {
                                             ? 'bg-success/10 text-success border-success/20'
                                             : viewingTrade.result === 'LOSS'
                                                 ? 'bg-danger/10 text-danger border-danger/20'
-                                                : 'bg-slate-500/10 text-slate-400 border-slate-500/20'
+                                                : 'bg-slate-500/10 text-text-dim border-slate-500/20'
                                         }`}>
                                         {viewingTrade.status === 'OPEN' ? 'OPEN POSITION' : viewingTrade.result}
                                     </span>
-                                    <span className="text-slate-600 font-mono text-xs">ID: {viewingTrade.id}</span>
+                                    <span className="text-text-dim font-mono text-xs">ID: {viewingTrade.id}</span>
                                 </div>
                                 <h3 className="text-2xl font-black text-text-main uppercase tracking-tight">{viewingTrade.strategy_name}</h3>
-                                <p className="text-slate-500 text-sm mt-1">{new Date(viewingTrade.created_at).toLocaleString()}</p>
+                                <p className="text-text-dim text-sm mt-1">{new Date(viewingTrade.created_at).toLocaleString()}</p>
                             </div>
                             <button
                                 onClick={() => setViewingTrade(null)}
-                                className="size-10 rounded-full bg-white/5 flex items-center justify-center text-slate-400 hover:text-text-main hover:bg-white/10 transition-all"
+                                className="size-10 rounded-full bg-white/5 flex items-center justify-center text-text-dim hover:text-text-main hover:bg-white/10 transition-all"
                             >
                                 <span className="material-symbols-outlined">close</span>
                             </button>
@@ -182,15 +182,15 @@ const TradeJournal = () => {
                             {/* Left Side: Stats & Notes */}
                             <div className="space-y-8">
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="glass-card p-4 border-border bg-white/[0.02]">
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">P&L Status</p>
+                                    <div className="glass-card p-4 border-border bg-surface/5">
+                                        <p className="text-[10px] font-black text-text-dim uppercase tracking-widest mb-1">P&L Status</p>
                                         <p className={`text-2xl font-mono font-bold ${Number(viewingTrade.pnl) > 0 ? 'text-success' : Number(viewingTrade.pnl) < 0 ? 'text-danger' : 'text-text-main'
                                             }`}>
                                             {viewingTrade.status === 'OPEN' ? 'Active' : `${Number(viewingTrade.pnl) > 0 ? '+' : ''}${viewingTrade.pnl || '0.00'} USD`}
                                         </p>
                                     </div>
-                                    <div className="glass-card p-4 border-border bg-white/[0.02]">
-                                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Execution</p>
+                                    <div className="glass-card p-4 border-border bg-surface/5">
+                                        <p className="text-[10px] font-black text-text-dim uppercase tracking-widest mb-1">Execution</p>
                                         <div className="flex items-center gap-2">
                                             <span className={`material-symbols-outlined ${viewingTrade.followed_plan ? 'text-primary' : 'text-danger'}`}>
                                                 {viewingTrade.followed_plan ? 'verified' : 'error'}
@@ -203,9 +203,9 @@ const TradeJournal = () => {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Journal Reflections</h4>
-                                    <div className="p-6 bg-white/[0.03] border border-border rounded-2xl min-h-[120px]">
-                                        <p className="text-slate-300 italic font-serif leading-relaxed whitespace-pre-wrap">
+                                    <h4 className="text-[10px] font-black text-text-dim uppercase tracking-widest">Journal Reflections</h4>
+                                    <div className="p-6 bg-surface/50 border border-border rounded-2xl min-h-[120px]">
+                                        <p className="text-text-dim italic font-serif leading-relaxed whitespace-pre-wrap">
                                             {viewingTrade.notes || "No reflection recorded for this session."}
                                         </p>
                                     </div>
@@ -214,12 +214,12 @@ const TradeJournal = () => {
 
                             {/* Right Side: Visual Evidence */}
                             <div className="space-y-6">
-                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Visual Evidence</h4>
+                                <h4 className="text-[10px] font-black text-text-dim uppercase tracking-widest">Visual Evidence</h4>
                                 <div className="grid grid-cols-1 gap-4">
                                     {viewingTrade.image_before && (
                                         <div className="space-y-2">
                                             <p className="text-[9px] font-bold text-slate-500 uppercase">Pre-Execution Setup</p>
-                                            <div className="rounded-2xl overflow-hidden border border-border bg-black group relative">
+                                            <div className="rounded-2xl overflow-hidden bg-surface border border-border group relative">
                                                 <img src={viewingTrade.image_before} className="w-full h-auto object-contain max-h-[300px]" alt="Setup" />
                                                 <a href={viewingTrade.image_before} target="_blank" rel="noreferrer" className="absolute top-4 right-4 size-8 rounded-full bg-black/60 flex items-center justify-center text-text-main opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <span className="material-symbols-outlined text-sm">open_in_new</span>
@@ -230,7 +230,7 @@ const TradeJournal = () => {
                                     {viewingTrade.image_live && (
                                         <div className="space-y-2">
                                             <p className="text-[9px] font-bold text-slate-500 uppercase">Live Market State</p>
-                                            <div className="rounded-2xl overflow-hidden border border-border bg-black group relative">
+                                            <div className="rounded-2xl overflow-hidden bg-surface border border-border group relative">
                                                 <img src={viewingTrade.image_live} className="w-full h-auto object-contain max-h-[300px]" alt="Live" />
                                                 <a href={viewingTrade.image_live} target="_blank" rel="noreferrer" className="absolute top-4 right-4 size-8 rounded-full bg-black/60 flex items-center justify-center text-text-main opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <span className="material-symbols-outlined text-sm">open_in_new</span>
@@ -241,7 +241,7 @@ const TradeJournal = () => {
                                     {viewingTrade.image_after && (
                                         <div className="space-y-2">
                                             <p className="text-[9px] font-bold text-slate-500 uppercase">Post-Trade Reflection</p>
-                                            <div className="rounded-2xl overflow-hidden border border-border bg-black group relative">
+                                            <div className="rounded-2xl overflow-hidden bg-surface border border-border group relative">
                                                 <img src={viewingTrade.image_after} className="w-full h-auto object-contain max-h-[300px]" alt="Post" />
                                                 <a href={viewingTrade.image_after} target="_blank" rel="noreferrer" className="absolute top-4 right-4 size-8 rounded-full bg-black/60 flex items-center justify-center text-text-main opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <span className="material-symbols-outlined text-sm">open_in_new</span>
@@ -267,32 +267,32 @@ const TradeJournal = () => {
                 <div className="fixed inset-0 bg-background/80 flex items-center justify-center z-[100] p-2 md:p-4 backdrop-blur-sm">
                     <div className="bg-surface border border-border rounded-xl md:rounded-2xl p-5 md:p-8 w-full max-w-md max-h-[95vh] overflow-y-auto animate-in zoom-in-95 shadow-2xl custom-scrollbar">
                         <h3 className="text-lg md:text-xl font-bold text-text-main mb-1 md:mb-2">Close Trade Entry</h3>
-                        <p className="text-[10px] md:text-xs text-slate-500 mb-4 md:mb-6 uppercase tracking-tight">Strategy: {selectedTrade.strategy_name}</p>
+                        <p className="text-[10px] md:text-xs text-text-dim mb-4 md:mb-6 uppercase tracking-tight">Strategy: {selectedTrade.strategy_name}</p>
 
                         <div className="space-y-4 md:space-y-5">
                             <div>
-                                <label className="block text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2 md:mb-3">Outcome</label>
+                                <label className="block text-[9px] md:text-[10px] font-bold text-text-dim uppercase tracking-widest mb-2 md:mb-3">Outcome</label>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => handleResultSelect('WIN')}
-                                        className={`flex-1 py-2.5 md:py-3 rounded-xl font-black transition-all border-2 text-[9px] md:text-[10px] ${closeResult === 'WIN' ? 'border-success bg-success/10 text-success' : 'border-border text-slate-600'
+                                        className={`flex-1 py-2.5 md:py-3 rounded-xl font-black transition-all border-2 text-[9px] md:text-[10px] ${closeResult === 'WIN' ? 'border-success bg-success/10 text-success' : 'border-border text-text-dim'
                                             }`}
                                     >WIN</button>
                                     <button
                                         onClick={() => handleResultSelect('BREAKEVEN')}
-                                        className={`flex-1 py-2.5 md:py-3 rounded-xl font-black transition-all border-2 text-[9px] md:text-[10px] ${closeResult === 'BREAKEVEN' ? 'border-yellow-500 bg-yellow-500/10 text-yellow-500' : 'border-border text-slate-600'
+                                        className={`flex-1 py-2.5 md:py-3 rounded-xl font-black transition-all border-2 text-[9px] md:text-[10px] ${closeResult === 'BREAKEVEN' ? 'border-yellow-500 bg-yellow-500/10 text-yellow-500' : 'border-border text-text-dim'
                                             }`}
                                     >B.E</button>
                                     <button
                                         onClick={() => handleResultSelect('LOSS')}
-                                        className={`flex-1 py-2.5 md:py-3 rounded-xl font-black transition-all border-2 text-[9px] md:text-[10px] ${closeResult === 'LOSS' ? 'border-danger bg-danger/10 text-danger' : 'border-border text-slate-600'
+                                        className={`flex-1 py-2.5 md:py-3 rounded-xl font-black transition-all border-2 text-[9px] md:text-[10px] ${closeResult === 'LOSS' ? 'border-danger bg-danger/10 text-danger' : 'border-border text-text-dim'
                                             }`}
                                     >LOSS</button>
                                 </div>
                             </div>
 
                             <div>
-                                <label className="block text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 md:mb-2">Final P&L (USD)</label>
+                                <label className="block text-[9px] md:text-[10px] font-bold text-text-dim uppercase tracking-widest mb-1 md:mb-2">Final P&L (USD)</label>
                                 <input
                                     type="number"
                                     value={closePnl}
@@ -303,7 +303,7 @@ const TradeJournal = () => {
                             </div>
 
                             <div>
-                                <label className="block text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 md:mb-2">Notes</label>
+                                <label className="block text-[9px] md:text-[10px] font-bold text-text-dim uppercase tracking-widest mb-1 md:mb-2">Notes</label>
                                 <textarea
                                     value={closeNotes}
                                     onChange={(e) => setCloseNotes(e.target.value)}
@@ -314,7 +314,7 @@ const TradeJournal = () => {
 
                             {/* Image Uploads */}
                             <div>
-                                <label className="block text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1 md:mb-2">Trade Screenshots (Max 3)</label>
+                                <label className="block text-[9px] md:text-[10px] font-bold text-text-dim uppercase tracking-widest mb-1 md:mb-2">Trade Screenshots (Max 3)</label>
                                 <div className="grid grid-cols-3 gap-2">
                                     <div className="relative">
                                         <input
@@ -361,7 +361,7 @@ const TradeJournal = () => {
                             <div className="flex gap-2 md:gap-3 pt-2 md:pt-4">
                                 <button
                                     onClick={() => setSelectedTrade(null)}
-                                    className="flex-1 py-2.5 md:py-3 text-slate-500 text-xs md:text-sm font-bold hover:text-text-main transition-colors"
+                                    className="flex-1 py-2.5 md:py-3 text-text-dim text-xs md:text-sm font-bold hover:text-text-main transition-colors"
                                 >CANCEL</button>
                                 <button
                                     onClick={handleCloseTrade}
@@ -382,11 +382,11 @@ const TradeJournal = () => {
                         <span className="material-symbols-outlined text-primary">book</span>
                         Trade Journal
                     </h2>
-                    <p className="text-slate-400">Review your performance and discipline history</p>
+                    <p className="text-text-dim">Review your performance and discipline history</p>
                 </div>
                 <button
                     onClick={refreshData}
-                    className="p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors"
+                    className="p-2 hover:bg-white/5 rounded-lg text-text-dim transition-colors"
                 >
                     <span className="material-symbols-outlined">refresh</span>
                 </button>
@@ -396,24 +396,24 @@ const TradeJournal = () => {
             {stats && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div className="bg-surface border border-border p-5 rounded-2xl">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Win Rate</p>
+                        <p className="text-[10px] font-bold text-text-dim uppercase tracking-widest mb-1">Win Rate</p>
                         <p className="text-3xl font-mono font-bold text-text-main">{stats.win_rate}%</p>
-                        <div className="w-full h-1 bg-slate-800 mt-4 rounded-full overflow-hidden">
+                        <div className="w-full h-1 bg-border mt-4 rounded-full overflow-hidden">
                             <div className="h-full bg-primary" style={{ width: `${stats.win_rate}%` }}></div>
                         </div>
                     </div>
                     <div className="bg-surface border border-border p-5 rounded-2xl">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total P&L</p>
+                        <p className="text-[10px] font-bold text-text-dim uppercase tracking-widest mb-1">Total P&L</p>
                         <p className={`text-3xl font-mono font-bold ${Number(stats.total_pnl) >= 0 ? 'text-success' : 'text-danger'}`}>
                             ${stats.total_pnl}
                         </p>
                     </div>
                     <div className="bg-surface border border-border p-5 rounded-2xl">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Discipline</p>
+                        <p className="text-[10px] font-bold text-text-dim uppercase tracking-widest mb-1">Discipline</p>
                         <p className="text-3xl font-mono font-bold text-primary">{stats.discipline_rate}%</p>
                     </div>
                     <div className="bg-surface border border-border p-5 rounded-2xl">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Signals</p>
+                        <p className="text-[10px] font-bold text-text-dim uppercase tracking-widest mb-1">Total Signals</p>
                         <p className="text-3xl font-mono font-bold text-text-main">{stats.total_trades}</p>
                     </div>
                 </div>
@@ -424,7 +424,7 @@ const TradeJournal = () => {
                 <div className="overflow-x-auto custom-scrollbar">
                     <table className="w-full text-left border-collapse min-w-[600px] md:min-w-full">
                         <thead>
-                            <tr className="bg-surface text-[10px] font-bold text-slate-500 uppercase tracking-widest border-b border-border">
+                            <tr className="bg-surface text-[10px] font-bold text-text-dim uppercase tracking-widest border-b border-border">
                                 <th className="px-4 md:px-6 py-4">Date</th>
                                 <th className="px-4 md:px-6 py-4">Strategy</th>
                                 <th className="px-4 md:px-6 py-4 hidden sm:table-cell">Status</th>
@@ -434,15 +434,15 @@ const TradeJournal = () => {
                                 <th className="px-4 md:px-6 py-4 text-center">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#27272a]">
+                        <tbody className="divide-y divide-border">
                             {trades.length > 0 ? (
                                 trades.map((trade) => (
                                     <tr
                                         key={trade.id}
                                         onClick={() => setViewingTrade(trade)}
-                                        className="hover:bg-white/[0.02] transition-colors group cursor-pointer"
+                                        className="hover:bg-surface/5 transition-colors group cursor-pointer"
                                     >
-                                        <td className="px-4 md:px-6 py-4 text-[11px] md:text-sm text-slate-500 font-mono">
+                                        <td className="px-4 md:px-6 py-4 text-[11px] md:text-sm text-text-dim font-mono">
                                             {new Date(trade.created_at).toLocaleDateString()}
                                         </td>
                                         <td className="px-4 md:px-6 py-4">
@@ -464,7 +464,7 @@ const TradeJournal = () => {
                                                 </span>
                                             )}
                                         </td>
-                                        <td className={`px-4 md:px-6 py-4 text-[12px] md:text-sm text-right font-mono font-bold ${trade.status === 'OPEN' ? 'text-slate-600' : (Number(trade.pnl) > 0 ? 'text-success' : Number(trade.pnl) < 0 ? 'text-danger' : 'text-text-main')
+                                        <td className={`px-4 md:px-6 py-4 text-[12px] md:text-sm text-right font-mono font-bold ${trade.status === 'OPEN' ? 'text-text-dim' : (Number(trade.pnl) > 0 ? 'text-success' : Number(trade.pnl) < 0 ? 'text-danger' : 'text-text-main')
                                             }`}>
                                             {trade.status === 'OPEN' ? '---' : `${Number(trade.pnl) > 0 ? '+' : ''}${trade.pnl}`}
                                         </td>
@@ -472,28 +472,28 @@ const TradeJournal = () => {
                                             {trade.followed_plan ? (
                                                 <span className="material-symbols-outlined text-primary text-lg">verified</span>
                                             ) : (
-                                                <span className="material-symbols-outlined text-slate-700 text-lg">heart_broken</span>
+                                                <span className="material-symbols-outlined text-text-dim text-lg">heart_broken</span>
                                             )}
                                         </td>
                                         <td className="px-4 md:px-6 py-4 text-center hidden md:table-cell" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex justify-center -space-x-2">
                                                 {trade.image_before && (
                                                     <a href={trade.image_before} target="_blank" rel="noopener noreferrer" className="size-6 rounded-full border border-border bg-surface flex items-center justify-center hover:scale-110 transition-transform z-0 hover:z-10">
-                                                        <span className="material-symbols-outlined text-[10px] text-slate-400">image</span>
+                                                        <span className="material-symbols-outlined text-[10px] text-text-dim">image</span>
                                                     </a>
                                                 )}
                                                 {trade.image_live && (
                                                     <a href={trade.image_live} target="_blank" rel="noopener noreferrer" className="size-6 rounded-full border border-border bg-surface flex items-center justify-center hover:scale-125 transition-transform z-0 hover:z-10">
-                                                        <span className="material-symbols-outlined text-[10px] text-slate-400">bolt</span>
+                                                        <span className="material-symbols-outlined text-[10px] text-text-dim">bolt</span>
                                                     </a>
                                                 )}
                                                 {trade.image_after && (
                                                     <a href={trade.image_after} target="_blank" rel="noopener noreferrer" className="size-6 rounded-full border border-border bg-surface flex items-center justify-center hover:scale-125 transition-transform z-0 hover:z-10">
-                                                        <span className="material-symbols-outlined text-[10px] text-slate-400">flag</span>
+                                                        <span className="material-symbols-outlined text-[10px] text-text-dim">flag</span>
                                                     </a>
                                                 )}
                                                 {!trade.image_before && !trade.image_live && !trade.image_after && (
-                                                    <span className="text-[10px] text-slate-700">-</span>
+                                                    <span className="text-[10px] text-text-dim">-</span>
                                                 )}
                                             </div>
                                         </td>
@@ -507,14 +507,14 @@ const TradeJournal = () => {
                                                     className="bg-primary/20 text-primary hover:bg-primary hover:text-text-main px-3 py-1 rounded-lg text-[9px] md:text-[10px] font-black transition-all"
                                                 >CLOSE</button>
                                             ) : (
-                                                <span className="material-symbols-outlined text-slate-800 text-lg">check_circle</span>
+                                                <span className="material-symbols-outlined text-text-dim text-lg">check_circle</span>
                                             )}
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-32 text-center text-slate-500 italic text-sm">
+                                    <td colSpan={6} className="px-6 py-32 text-center text-text-dim italic text-sm">
                                         No entries in journal yet.
                                     </td>
                                 </tr>

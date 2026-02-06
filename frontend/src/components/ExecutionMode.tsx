@@ -268,8 +268,8 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
                             onClick={handleEnterTrade}
                             disabled={!isUnlocked || loading}
                             className={`w-full max-w-xl py-6 rounded-[28px] font-black text-sm tracking-[0.2em] uppercase transition-all duration-500 flex items-center justify-center gap-4 ${isUnlocked
-                                ? 'bg-success hover:bg-green-600 text-text-main shadow-[0_20px_60px_-15px_rgba(16,185,129,0.3)] hover:-translate-y-1'
-                                : 'bg-slate-900/50 border border-white/5 text-text-dim cursor-not-allowed'
+                                ? 'bg-success hover:bg-green-600 text-black shadow-[0_20px_60px_-15px_rgba(16,185,129,0.3)] hover:-translate-y-1'
+                                : 'bg-surface/50 border border-border text-text-dim cursor-not-allowed'
                                 }`}
                         >
                             <span className={`material-symbols-outlined text-2xl ${isUnlocked ? 'animate-glide' : ''}`}>

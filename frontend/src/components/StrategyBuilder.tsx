@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { strategyService } from '../services/endpoints';
 import { notify } from './NotificationProvider';
 import { useAuthStore } from '../store/useAuthStore';
-import CustomRuleList from './CustomRuleList';
+// Unused import removed
 
 interface Strategy {
     id: number;
@@ -300,7 +300,7 @@ const StrategyBuilder = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 {/* Left: Saved Strategies */}
                 <div className="lg:col-span-4 space-y-4">
-                    <h3 className="text-[10px] font-black text-slate-600 uppercase tracking-widest px-1">Saved Strategies</h3>
+                    <h3 className="text-[10px] font-black text-text-dim uppercase tracking-widest px-1">Saved Strategies</h3>
                     <div className="space-y-3">
                         {savedStrategies.map((s) => (
                             <div
@@ -308,7 +308,7 @@ const StrategyBuilder = () => {
                                 onClick={() => handleSelectStrategy(s)}
                                 className={`p-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 relative group overflow-hidden ${selectedStrategy?.id === s.id
                                     ? 'border-primary bg-primary/[0.03] shadow-lg shadow-primary/5'
-                                    : 'border-border bg-surface/30 hover:border-slate-700'
+                                    : 'border-border bg-surface/30 hover:border-text-dim'
                                     }`}
                             >
                                 <div className="flex justify-between items-center relative z-10">
@@ -381,7 +381,7 @@ const StrategyBuilder = () => {
                                                 )}
                                                 <button
                                                     onClick={handleTogglePublic}
-                                                    className={`size-10 rounded-xl flex items-center justify-center transition-all ${selectedStrategy.is_public ? 'bg-success text-text-main shadow-lg shadow-success/20' : 'bg-slate-800 text-text-dim'}`}
+                                                    className={`size-10 rounded-xl flex items-center justify-center transition-all ${selectedStrategy.is_public ? 'bg-success text-text-main shadow-lg shadow-success/20' : 'bg-surface/50 border border-border text-text-dim'}`}
                                                 >
                                                     <span className="material-symbols-outlined">{selectedStrategy.is_public ? 'public' : 'public_off'}</span>
                                                 </button>
@@ -457,7 +457,7 @@ const StrategyBuilder = () => {
                                 {(isEditing ? editedChecklist : checklist).map((item, idx) => (
                                     <div
                                         key={idx}
-                                        className="flex items-start gap-6 p-5 rounded-2xl bg-background border border-border group hover:border-slate-700 transition-all"
+                                        className="flex items-start gap-6 p-5 rounded-2xl bg-background border border-border group hover:border-text-dim transition-all"
                                     >
                                         <div className="flex-shrink-0 size-8 rounded-lg bg-surface flex items-center justify-center text-[10px] font-black text-primary border border-primary/20">
                                             {idx + 1}

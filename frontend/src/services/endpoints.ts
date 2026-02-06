@@ -50,7 +50,7 @@ export const strategyService = {
     },
 
     /** Updates strategy metadata or checklist items. */
-    async update(id: number, data: { name?: string, checklist_items?: string[] }) {
+    async update(id: number, data: { name?: string, checklist_items?: string[], is_public?: boolean }) {
         const response = await api.patch(`/strategies/strategies/${id}/`, data);
         return response.data;
     },
