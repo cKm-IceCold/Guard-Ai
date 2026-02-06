@@ -162,10 +162,10 @@ const Dashboard = () => {
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* System Status */}
+                {/* Risk Guardian Status */}
                 <div className="lg:col-span-1 glass-card p-6 group">
                     <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-secondary-text uppercase tracking-widest text-xs font-bold">Safety Status</h3>
+                        <h3 className="text-secondary-text uppercase tracking-widest text-xs font-bold">Risk Guardian</h3>
                         <div className={`size-3 rounded-full ${riskProfile?.is_locked ? 'bg-danger animate-pulse' : 'bg-success shadow-[0_0_10px_#4ade80]'}`}></div>
                     </div>
 

@@ -12,7 +12,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVisible, setIsVisible }: SidebarPr
 
     const menuItems = [
         { id: 'dashboard', icon: 'dashboard', label: 'Home' },
-        { id: 'risk', icon: 'gpp_maybe', label: 'Safety Rules' },
+        { id: 'risk', icon: 'gpp_maybe', label: 'Risk Guardian' },
         { id: 'strategy', icon: 'psychology', label: 'My Strategies' },
         { id: 'execution', icon: 'checklist_rtl', label: 'Execution Mode' },
         { id: 'journal', icon: 'history_edu', label: 'Trade Journal' },

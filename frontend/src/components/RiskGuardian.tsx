@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { riskService, journalService } from '../services/endpoints';
-import { notify } from './NotificationProvider';
 
 const LockCountdown = ({ lockedAt, onComplete }: { lockedAt: string, onComplete: () => void }) => {
     const [timeLeft, setTimeLeft] = useState<string>('');
@@ -122,7 +121,7 @@ const RiskGuardian = () => {
                 <div>
                     <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                         <span className="material-symbols-outlined text-primary">shield</span>
-                        Safety Settings
+                        Risk Guardian
                     </h2>
                     <p className="text-slate-400">Protecting Your Account</p>
                 </div>
