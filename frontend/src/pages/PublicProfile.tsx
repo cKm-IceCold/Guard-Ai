@@ -52,25 +52,25 @@ const PublicProfile = () => {
     };
 
     if (loading) return (
-        <div className="min-h-screen bg-[#050507] flex items-center justify-center">
+        <div className="min-h-screen bg-background flex items-center justify-center">
             <div className="size-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
         </div>
     );
 
     if (error || !data) return (
-        <div className="min-h-screen bg-[#050507] flex flex-col items-center justify-center text-center p-8">
+        <div className="min-h-screen bg-background flex flex-col items-center justify-center text-center p-8">
             <span className="material-symbols-outlined text-zinc-800 text-9xl mb-4">person_off</span>
-            <h1 className="text-3xl font-black text-white">Profile Not Found</h1>
+            <h1 className="text-3xl font-black text-text-main">Profile Not Found</h1>
             <p className="text-slate-500 mt-2">{error}</p>
         </div>
     );
 
     return (
-        <div className="min-h-screen bg-[#050507] text-white font-sans selection:bg-primary/30 pb-20">
+        <div className="min-h-screen bg-background text-text-main font-sans selection:bg-primary/30 pb-20">
             {/* Header / Nav */}
-            <nav className="border-b border-white/5 py-4 px-8 flex justify-between items-center bg-black/20 backdrop-blur-md sticky top-0 z-50">
+            <nav className="border-b border-border py-4 px-8 flex justify-between items-center bg-black/20 backdrop-blur-md sticky top-0 z-50">
                 <div className="flex items-center gap-2">
-                    <div className="size-8 bg-gradient-to-tr from-blue-600 to-violet-600 rounded-lg flex items-center justify-center font-black text-white text-xs shadow-lg shadow-blue-900/20">
+                    <div className="size-8 bg-gradient-to-tr from-blue-600 to-violet-600 rounded-lg flex items-center justify-center font-black text-text-main text-xs shadow-lg shadow-blue-900/20">
                         G
                     </div>
                     <span className="font-bold tracking-tight text-lg">Guard AI</span>
@@ -89,7 +89,7 @@ const PublicProfile = () => {
                 <div className="flex flex-col md:flex-row items-start justify-between gap-12">
                     <div className="flex-1 space-y-6">
                         <div className="flex items-center gap-6">
-                            <div className="size-24 rounded-3xl bg-gradient-to-br from-slate-800 to-slate-950 border border-white/10 flex items-center justify-center text-4xl font-black text-slate-400 shadow-2xl skew-x-3">
+                            <div className="size-24 rounded-3xl bg-gradient-to-br from-slate-800 to-slate-950 border border-border flex items-center justify-center text-4xl font-black text-slate-400 shadow-2xl skew-x-3">
                                 {data.username[0].toUpperCase()}
                             </div>
                             <div>
@@ -107,7 +107,7 @@ const PublicProfile = () => {
                         </div>
 
                         {/* AI Bio Card */}
-                        <div className="bg-white/[0.02] border border-white/5 p-6 rounded-3xl relative overflow-hidden group">
+                        <div className="bg-white/[0.02] border border-border p-6 rounded-3xl relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-4 opacity-5 rotate-12 group-hover:rotate-0 transition-transform duration-500">
                                 <span className="material-symbols-outlined text-5xl">psychology</span>
                             </div>
@@ -123,13 +123,13 @@ const PublicProfile = () => {
 
                     {/* Quick Stats Grid */}
                     <div className="grid grid-cols-2 gap-4 w-full md:w-80">
-                        <div className="bg-surface border border-white/5 p-6 rounded-3xl">
+                        <div className="bg-surface border border-border p-6 rounded-3xl">
                             <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Win Rate</p>
-                            <p className="text-3xl font-black text-white">{data.stats.win_rate}%</p>
+                            <p className="text-3xl font-black text-text-main">{data.stats.win_rate}%</p>
                         </div>
-                        <div className="bg-surface border border-white/5 p-6 rounded-3xl">
+                        <div className="bg-surface border border-border p-6 rounded-3xl">
                             <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mb-1">Trades</p>
-                            <p className="text-3xl font-black text-white">{data.stats.total_trades}</p>
+                            <p className="text-3xl font-black text-text-main">{data.stats.total_trades}</p>
                         </div>
                         <div className="bg-primary/5 border border-primary/10 p-6 rounded-3xl col-span-2">
                             <div className="flex justify-between items-center">
@@ -144,8 +144,8 @@ const PublicProfile = () => {
                 </div>
 
                 {/* Performance Chart */}
-                <div className="bg-surface border border-white/5 p-8 rounded-[40px] shadow-2xl">
-                    <h3 className="text-xl font-bold text-white mb-8 flex items-center gap-2">
+                <div className="bg-surface border border-border p-8 rounded-[40px] shadow-2xl">
+                    <h3 className="text-xl font-bold text-text-main mb-8 flex items-center gap-2">
                         <span className="material-symbols-outlined text-primary">show_chart</span>
                         Verified Equity Curve
                     </h3>
@@ -159,12 +159,12 @@ const PublicProfile = () => {
                                         <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                                 <XAxis dataKey="date" stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} />
                                 <YAxis stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#0a0a0c', border: '1px solid #ffffff10', borderRadius: '12px' }}
-                                    itemStyle={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
+                                    contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }}
+                                    itemStyle={{ color: 'var(--text-main)', fontSize: '12px', fontWeight: 'bold' }}
                                     labelStyle={{ color: '#52525b', fontSize: '10px' }}
                                 />
                                 <Area type="monotone" dataKey="pnl" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorPnl)" />
@@ -175,15 +175,15 @@ const PublicProfile = () => {
 
                 {/* Shared Strategies */}
                 <div className="space-y-6">
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <h3 className="text-xl font-bold text-text-main flex items-center gap-2">
                         <span className="material-symbols-outlined text-indigo-400">verified_user</span>
                         Public Alpha Strategies
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {data.strategies.map(strat => (
-                            <div key={strat.id} className="bg-white/[0.02] border border-white/5 p-8 rounded-3xl space-y-4 hover:bg-white/[0.04] transition-all">
+                            <div key={strat.id} className="bg-white/[0.02] border border-border p-8 rounded-3xl space-y-4 hover:bg-white/[0.04] transition-all">
                                 <div>
-                                    <h4 className="text-xl font-black text-white">{strat.name}</h4>
+                                    <h4 className="text-xl font-black text-text-main">{strat.name}</h4>
                                     <p className="text-slate-400 text-sm mt-1 line-clamp-2">{strat.description}</p>
                                 </div>
                                 <div className="space-y-2">

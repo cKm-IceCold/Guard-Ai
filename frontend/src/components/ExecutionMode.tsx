@@ -122,11 +122,11 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
                 <div className="mx-auto size-24 bg-danger/10 rounded-[32px] flex items-center justify-center mb-4">
                     <span className="material-symbols-outlined text-6xl text-danger animate-pulse">lock_person</span>
                 </div>
-                <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">Trading Locked</h2>
+                <h2 className="text-3xl font-black text-text-main uppercase tracking-tighter italic">Trading Locked</h2>
                 <div className="bg-danger/10 border border-danger/20 py-2 px-4 rounded-xl inline-block">
                     <p className="text-danger font-mono text-xs font-black uppercase tracking-widest">{riskStatus.reason}</p>
                 </div>
-                <p className="text-slate-500 text-sm leading-relaxed max-w-sm mx-auto font-medium">
+                <p className="text-text-dim text-sm leading-relaxed max-w-sm mx-auto font-medium">
                     The Risk Manager has disabled trading to protect your account.
                 </p>
             </div>
@@ -138,13 +138,13 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
             {/* Image Modal */}
             {selectedImage && (
                 <div
-                    className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 backdrop-blur-md cursor-pointer"
+                    className="fixed inset-0 bg-background/90 flex items-center justify-center z-50 p-4 backdrop-blur-md cursor-pointer"
                     onClick={() => setSelectedImage(null)}
                 >
                     <div className="relative max-w-4xl max-h-[90vh] animate-in zoom-in-95">
                         <img src={selectedImage} alt="Strategy Reference" className="rounded-2xl max-h-[90vh] object-contain shadow-2xl" />
                         <button
-                            className="absolute top-4 right-4 size-10 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70"
+                            className="absolute top-4 right-4 size-10 bg-black/50 rounded-full flex items-center justify-center text-text-main hover:bg-black/70"
                             onClick={() => setSelectedImage(null)}
                         >
                             <span className="material-symbols-outlined">close</span>
@@ -155,43 +155,43 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
 
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                    <h2 className="text-3xl font-black text-text-main tracking-tight flex items-center gap-3">
                         <span className="material-symbols-outlined text-success text-4xl">play_circle</span>
                         TAKE A TRADE
                     </h2>
-                    <p className="text-slate-500 font-mono text-sm mt-1 uppercase tracking-widest">Active Checklist v3.0</p>
+                    <p className="text-text-dim font-mono text-sm mt-1 uppercase tracking-widest">Active Checklist v3.0</p>
                 </div>
             </header>
 
             {successMessage && (
                 <div className="bg-success/10 border-2 border-success/20 p-8 rounded-3xl flex items-center gap-6 animate-in slide-in-from-top-4 duration-500 shadow-xl shadow-success/5">
-                    <div className="size-14 bg-success rounded-2xl flex items-center justify-center text-white shadow-lg shadow-success/20">
+                    <div className="size-14 bg-success rounded-2xl flex items-center justify-center text-text-main shadow-lg shadow-success/20">
                         <span className="material-symbols-outlined text-3xl font-black">verified</span>
                     </div>
                     <div>
-                        <h4 className="font-black text-white uppercase tracking-tighter text-lg">Trade Logged</h4>
+                        <h4 className="font-black text-text-main uppercase tracking-tighter text-lg">Trade Logged</h4>
                         <p className="text-xs text-success/70 font-bold uppercase tracking-widest">Checklist verified. Good luck!</p>
                     </div>
                 </div>
             )}
 
             <div className="glass-card rounded-3xl p-8 shadow-2xl relative overflow-hidden">
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 px-1">Select Your Strategy</h3>
+                <h3 className="text-[10px] font-black text-text-dim uppercase tracking-[0.2em] mb-4 px-1">Select Your Strategy</h3>
                 <div className="flex flex-wrap gap-3 relative z-10">
                     {strategies.map((s) => (
                         <button
                             key={s.id}
                             onClick={() => setSelectedStrategy(s)}
                             className={`px-6 py-3 rounded-2xl border-2 transition-all text-[11px] font-black uppercase tracking-tight ${selectedStrategy?.id === s.id
-                                ? 'border-primary bg-primary/10 text-white shadow-lg shadow-primary/10'
-                                : 'border-border bg-[#0a0a0c]/50 text-slate-500 hover:border-slate-700'
+                                ? 'border-primary bg-primary/10 text-text-main shadow-lg shadow-primary/10'
+                                : 'border-border bg-surface text-text-dim hover:border-slate-700'
                                 }`}
                         >
                             {s.name}
                         </button>
                     ))}
                     {strategies.length === 0 && (
-                        <p className="text-xs text-slate-600 font-mono px-1">No strategies found. Go to Strategy Lab to create one.</p>
+                        <p className="text-xs text-text-dim font-mono px-1">No strategies found. Go to Strategy Lab to create one.</p>
                     )}
                 </div>
             </div>
@@ -200,18 +200,18 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
                 <div className="glass-card rounded-[40px] p-12 shadow-2xl relative overflow-hidden group">
                     <div className="flex justify-between items-center mb-8 relative z-10">
                         <div>
-                            <h3 className="text-2xl font-black text-white flex items-center gap-3">
-                                <span className="material-symbols-outlined text-slate-500 text-3xl">checklist</span>
+                            <h3 className="text-2xl font-black text-text-main flex items-center gap-3">
+                                <span className="material-symbols-outlined text-text-dim text-3xl">checklist</span>
                                 {selectedStrategy.name}
                             </h3>
-                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mt-2">Before Entering Trade</p>
+                            <p className="text-[10px] font-black text-text-dim uppercase tracking-[0.3em] mt-2">Before Entering Trade</p>
                         </div>
                     </div>
 
                     {/* Strategy Visual References */}
                     {strategyImages.length > 0 && (
                         <div className="mb-10 relative z-10">
-                            <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                            <h4 className="text-[10px] font-black text-text-dim uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                                 <span className="material-symbols-outlined text-primary text-lg">image</span>
                                 Visual Reference
                             </h4>
@@ -229,12 +229,12 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/img:opacity-100 transition-opacity">
                                             <div className="absolute bottom-0 left-0 right-0 p-3">
-                                                <p className="text-xs font-black text-white uppercase tracking-tight">{img.title}</p>
-                                                <p className="text-[9px] text-slate-400 line-clamp-1">{img.desc}</p>
+                                                <p className="text-xs font-black text-text-main uppercase tracking-tight">{img.title}</p>
+                                                <p className="text-[9px] text-text-dim line-clamp-1">{img.desc}</p>
                                             </div>
                                         </div>
                                         <div className="absolute top-2 right-2 size-8 bg-black/50 rounded-lg flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
-                                            <span className="material-symbols-outlined text-white text-sm">zoom_in</span>
+                                            <span className="material-symbols-outlined text-text-main text-sm">zoom_in</span>
                                         </div>
                                     </div>
                                 ))}
@@ -249,14 +249,14 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
                                 onClick={() => handleToggleItem(idx)}
                                 className={`w-full text-left p-5 rounded-3xl border-2 flex items-center gap-6 transition-all duration-300 transform active:scale-[0.99] ${checkedItems[idx]
                                     ? 'border-success bg-success/[0.03] shadow-lg shadow-success/5'
-                                    : 'border-border bg-[#050507]/40 hover:border-slate-700'
+                                    : 'border-border bg-background/40 hover:border-slate-700'
                                     }`}
                             >
-                                <div className={`size-8 rounded-xl border-2 flex items-center justify-center transition-all ${checkedItems[idx] ? 'bg-success border-success text-white shadow-lg shadow-success/20' : 'border-slate-800 bg-slate-900/50'
+                                <div className={`size-8 rounded-xl border-2 flex items-center justify-center transition-all ${checkedItems[idx] ? 'bg-success border-success text-black shadow-lg shadow-success/20' : 'border-border bg-surface/50'
                                     }`}>
                                     {checkedItems[idx] && <span className="material-symbols-outlined text-lg font-black">check</span>}
                                 </div>
-                                <span className={`text-sm font-bold tracking-tight ${checkedItems[idx] ? 'text-white' : 'text-slate-400'}`}>
+                                <span className={`text-sm font-bold tracking-tight ${checkedItems[idx] ? 'text-text-main' : 'text-text-dim'}`}>
                                     {item}
                                 </span>
                             </button>
@@ -268,8 +268,8 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
                             onClick={handleEnterTrade}
                             disabled={!isUnlocked || loading}
                             className={`w-full max-w-xl py-6 rounded-[28px] font-black text-sm tracking-[0.2em] uppercase transition-all duration-500 flex items-center justify-center gap-4 ${isUnlocked
-                                ? 'bg-success hover:bg-green-600 text-white shadow-[0_20px_60px_-15px_rgba(16,185,129,0.3)] hover:-translate-y-1'
-                                : 'bg-slate-900/50 border border-white/5 text-slate-700 cursor-not-allowed'
+                                ? 'bg-success hover:bg-green-600 text-text-main shadow-[0_20px_60px_-15px_rgba(16,185,129,0.3)] hover:-translate-y-1'
+                                : 'bg-slate-900/50 border border-white/5 text-text-dim cursor-not-allowed'
                                 }`}
                         >
                             <span className={`material-symbols-outlined text-2xl ${isUnlocked ? 'animate-glide' : ''}`}>
@@ -277,7 +277,7 @@ const ExecutionMode = ({ onTradeLogged }: { onTradeLogged: () => void }) => {
                             </span>
                             {loading ? 'PROCESSING...' : (isUnlocked ? 'START TRADE' : 'FINISH CHECKLIST')}
                         </button>
-                        <p className="mt-6 text-[9px] text-slate-600 font-mono uppercase tracking-widest opacity-60">
+                        <p className="mt-6 text-[9px] text-text-dim font-mono uppercase tracking-widest opacity-60">
                             Always follow your plan.
                         </p>
                     </div>

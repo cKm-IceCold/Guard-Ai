@@ -259,21 +259,21 @@ const StrategyBuilder = () => {
         <div className="space-y-8 animate-in fade-in duration-700 max-w-6xl mx-auto">
             {/* Limit Modal */}
             {showLimitModal && (
-                <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 backdrop-blur-md">
+                <div className="fixed inset-0 bg-background/90 flex items-center justify-center z-50 p-4 backdrop-blur-md">
                     <div className="glass-card rounded-3xl p-10 max-w-md text-center animate-in zoom-in-95 shadow-[0_0_50px_rgba(234,179,8,0.1)]">
                         <div className="mx-auto size-16 bg-yellow-500/10 rounded-2xl flex items-center justify-center mb-6">
                             <span className="material-symbols-outlined text-4xl text-yellow-500">lightbulb</span>
                         </div>
-                        <h3 className="text-xl font-black text-white uppercase tracking-tighter mb-4">Focus Over Quantity</h3>
-                        <p className="text-slate-400 font-serif italic mb-8 leading-relaxed">
+                        <h3 className="text-xl font-black text-text-main uppercase tracking-tighter mb-4">Focus Over Quantity</h3>
+                        <p className="text-text-dim font-serif italic mb-8 leading-relaxed">
                             {quoteTip}
                         </p>
-                        <p className="text-[10px] text-slate-500 uppercase tracking-widest font-black mb-8 px-4">
+                        <p className="text-[10px] text-text-dim uppercase tracking-widest font-black mb-8 px-4">
                             You already have {MAX_STRATEGIES} protocols. Master them before expanding.
                         </p>
                         <button
                             onClick={() => setShowLimitModal(false)}
-                            className="w-full py-4 bg-slate-900 border border-white/5 text-white rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-slate-800 transition-all"
+                            className="w-full py-4 bg-background border border-border text-text-main rounded-2xl font-black text-xs tracking-widest uppercase hover:bg-surface transition-all"
                         >
                             ACKNOWLEDGED
                         </button>
@@ -283,14 +283,14 @@ const StrategyBuilder = () => {
 
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                    <h2 className="text-3xl font-black text-text-main tracking-tight flex items-center gap-3">
                         <span className="material-symbols-outlined text-primary text-4xl">psychology</span>
                         MY STRATEGIES
                     </h2>
-                    <p className="text-slate-500 font-mono text-sm mt-1 uppercase tracking-widest">AI Assistant</p>
+                    <p className="text-text-dim font-mono text-sm mt-1 uppercase tracking-widest">AI Assistant</p>
                 </div>
                 <div className="flex items-center gap-2 text-xs font-mono font-bold">
-                    <span className="text-slate-600 uppercase">Limit:</span>
+                    <span className="text-text-dim uppercase">Limit:</span>
                     <span className={`px-2 py-0.5 rounded ${savedStrategies.length >= MAX_STRATEGIES ? 'bg-danger/20 text-danger' : 'bg-success/20 text-success'}`}>
                         {savedStrategies.length}/{MAX_STRATEGIES} USED
                     </span>
@@ -313,30 +313,30 @@ const StrategyBuilder = () => {
                             >
                                 <div className="flex justify-between items-center relative z-10">
                                     <div className="flex items-center gap-3">
-                                        <div className={`size-8 rounded-xl flex items-center justify-center font-black text-xs ${selectedStrategy?.id === s.id ? 'bg-primary text-white' : 'bg-slate-800 text-slate-500'
+                                        <div className={`size-8 rounded-xl flex items-center justify-center font-black text-xs ${selectedStrategy?.id === s.id ? 'bg-primary text-black' : 'bg-surface/50 text-text-dim'
                                             }`}>
                                             {s.name[0].toUpperCase()}
                                         </div>
-                                        <p className={`font-black uppercase text-[11px] tracking-tight ${selectedStrategy?.id === s.id ? 'text-white' : 'text-slate-400'}`}>
+                                        <p className={`font-black uppercase text-[11px] tracking-tight ${selectedStrategy?.id === s.id ? 'text-text-main' : 'text-text-dim'}`}>
                                             {s.name}
                                         </p>
                                     </div>
                                     <button
                                         onClick={(e) => handleDeleteStrategy(s.id, e)}
-                                        className="material-symbols-outlined text-slate-700 hover:text-danger text-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="material-symbols-outlined text-text-dim hover:text-danger text-lg opacity-0 group-hover:opacity-100 transition-opacity"
                                     >delete</button>
                                 </div>
                                 <div className="mt-2 flex gap-1">
                                     {Array.from({ length: Math.min(s.checklist_items.length, 5) }).map((_, i) => (
-                                        <div key={i} className="h-0.5 w-3 bg-slate-800 rounded-full"></div>
+                                        <div key={i} className="h-0.5 w-3 bg-border rounded-full"></div>
                                     ))}
                                 </div>
                             </div>
                         ))}
                         {savedStrategies.length === 0 && (
                             <div className="p-8 text-center glass-card rounded-3xl border-dashed">
-                                <span className="material-symbols-outlined text-slate-800 text-4xl mb-2">folder_off</span>
-                                <p className="text-[10px] text-slate-600 uppercase font-bold tracking-widest leading-relaxed">No strategies saved yet.</p>
+                                <span className="material-symbols-outlined text-text-dim text-4xl mb-2">folder_off</span>
+                                <p className="text-[10px] text-text-dim uppercase font-bold tracking-widest leading-relaxed">No strategies saved yet.</p>
                             </div>
                         )}
                     </div>
@@ -352,7 +352,7 @@ const StrategyBuilder = () => {
                         <div className="space-y-6 relative z-10">
                             <div className="grid grid-cols-2 gap-6">
                                 <div className="flex-1">
-                                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">Strategy Name</label>
+                                    <label className="block text-[10px] font-black text-text-dim uppercase tracking-widest mb-3 px-1">Strategy Name</label>
                                     <input
                                         type="text"
                                         value={strategyName}
@@ -365,8 +365,8 @@ const StrategyBuilder = () => {
                                     {selectedStrategy && (
                                         <div className="flex items-center justify-between bg-white/[0.03] border border-white/5 p-3 rounded-2xl">
                                             <div>
-                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Public Sharing</p>
-                                                <p className="text-[10px] text-slate-400 mt-0.5">{selectedStrategy.is_public ? 'Active on Profile' : 'Private'}</p>
+                                                <p className="text-[9px] font-black text-text-dim uppercase tracking-widest">Public Sharing</p>
+                                                <p className="text-[10px] text-text-dim mt-0.5">{selectedStrategy.is_public ? 'Active on Profile' : 'Private'}</p>
                                             </div>
                                             <div className="flex gap-2">
                                                 {selectedStrategy.is_public && (
@@ -381,7 +381,7 @@ const StrategyBuilder = () => {
                                                 )}
                                                 <button
                                                     onClick={handleTogglePublic}
-                                                    className={`size-10 rounded-xl flex items-center justify-center transition-all ${selectedStrategy.is_public ? 'bg-success text-white shadow-lg shadow-success/20' : 'bg-slate-800 text-slate-500'}`}
+                                                    className={`size-10 rounded-xl flex items-center justify-center transition-all ${selectedStrategy.is_public ? 'bg-success text-text-main shadow-lg shadow-success/20' : 'bg-slate-800 text-text-dim'}`}
                                                 >
                                                     <span className="material-symbols-outlined">{selectedStrategy.is_public ? 'public' : 'public_off'}</span>
                                                 </button>
@@ -392,7 +392,7 @@ const StrategyBuilder = () => {
                             </div>
 
                             <div>
-                                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 px-1">Your Strategy Plan</label>
+                                <label className="block text-[10px] font-black text-text-dim uppercase tracking-widest mb-3 px-1">Your Strategy Plan</label>
                                 <textarea
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
@@ -420,7 +420,7 @@ const StrategyBuilder = () => {
                     {checklist.length > 0 && (
                         <div className="animate-in slide-in-from-bottom-4 duration-700 bg-surface border border-border rounded-3xl p-10 shadow-2xl">
                             <div className="flex justify-between items-center mb-10 border-b border-border pb-6">
-                                <h4 className="text-xl font-black text-white tracking-widest uppercase">
+                                <h4 className="text-xl font-black text-text-main tracking-widest uppercase">
                                     {isEditing ? 'Customize Your Rules' : 'Your AI Rules'}
                                 </h4>
                                 <div className="flex gap-4">
@@ -428,7 +428,7 @@ const StrategyBuilder = () => {
                                         <>
                                             <button
                                                 onClick={handleAddItem}
-                                                className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest hover:text-white transition-colors"
+                                                className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest hover:text-text-main transition-colors"
                                             >
                                                 <span className="material-symbols-outlined text-lg">add_circle</span>
                                                 Add Rule
@@ -436,7 +436,7 @@ const StrategyBuilder = () => {
                                             <button
                                                 onClick={handleSaveChecklist}
                                                 disabled={saving}
-                                                className={`px-6 py-2 bg-success text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-600 transition-all ${saving ? 'opacity-50' : ''}`}
+                                                className={`px-6 py-2 bg-success text-text-main rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-green-600 transition-all ${saving ? 'opacity-50' : ''}`}
                                             >
                                                 {saving ? 'Saving...' : 'Save Rules'}
                                             </button>
@@ -444,7 +444,7 @@ const StrategyBuilder = () => {
                                     ) : (
                                         <button
                                             onClick={() => setIsEditing(true)}
-                                            className="flex items-center gap-2 text-[10px] font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors"
+                                            className="flex items-center gap-2 text-[10px] font-black text-text-dim uppercase tracking-widest hover:text-text-main transition-colors"
                                         >
                                             <span className="material-symbols-outlined text-lg">edit_note</span>
                                             Customize Rules
@@ -457,9 +457,9 @@ const StrategyBuilder = () => {
                                 {(isEditing ? editedChecklist : checklist).map((item, idx) => (
                                     <div
                                         key={idx}
-                                        className="flex items-start gap-6 p-5 rounded-2xl bg-[#050507] border border-border group hover:border-slate-700 transition-all"
+                                        className="flex items-start gap-6 p-5 rounded-2xl bg-background border border-border group hover:border-slate-700 transition-all"
                                     >
-                                        <div className="flex-shrink-0 size-8 rounded-lg bg-slate-900 flex items-center justify-center text-[10px] font-black text-primary border border-primary/20">
+                                        <div className="flex-shrink-0 size-8 rounded-lg bg-surface flex items-center justify-center text-[10px] font-black text-primary border border-primary/20">
                                             {idx + 1}
                                         </div>
                                         {isEditing ? (
@@ -468,15 +468,15 @@ const StrategyBuilder = () => {
                                                     type="text"
                                                     value={item}
                                                     onChange={(e) => handleUpdateItem(idx, e.target.value)}
-                                                    className="flex-1 bg-transparent border-none text-white font-medium focus:ring-0 p-0"
+                                                    className="flex-1 bg-transparent border-none text-text-main font-medium focus:ring-0 p-0"
                                                 />
                                                 <button
                                                     onClick={() => handleRemoveItem(idx)}
-                                                    className="material-symbols-outlined text-slate-700 hover:text-danger text-lg"
+                                                    className="material-symbols-outlined text-text-dim hover:text-danger text-lg"
                                                 >delete</button>
                                             </div>
                                         ) : (
-                                            <p className="text-slate-300 font-medium leading-relaxed group-hover:text-white transition-colors">{item}</p>
+                                            <p className="text-text-dim font-medium leading-relaxed group-hover:text-text-main transition-colors">{item}</p>
                                         )}
                                     </div>
                                 ))}
@@ -513,16 +513,16 @@ const StrategyBuilder = () => {
 
                                         <div className="flex justify-between items-start mb-8 relative z-10">
                                             <div>
-                                                <h5 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
+                                                <h5 className="text-xl font-black text-text-main uppercase tracking-tighter flex items-center gap-2">
                                                     <span className="material-symbols-outlined text-primary">analytics</span>
                                                     2-Year Performance Test
                                                 </h5>
-                                                <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest mt-1">
+                                                <p className="text-[10px] text-text-dim font-mono uppercase tracking-widest mt-1">
                                                     Scope: {backtestResult.test_period?.start} — {backtestResult.test_period?.end} ({backtestResult.test_period?.total_candles} Candles Analyzed)
                                                 </p>
                                             </div>
-                                            <div className="px-4 py-2 bg-slate-900 border border-white/5 rounded-xl">
-                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-2">Bench vs BTC:</span>
+                                            <div className="px-4 py-2 bg-background border border-border rounded-xl">
+                                                <span className="text-[10px] font-black text-text-dim uppercase tracking-widest mr-2">Bench vs BTC:</span>
                                                 <span className={`text-[10px] font-black uppercase ${backtestResult.benchmark_diff >= 0 ? 'text-success' : 'text-danger'}`}>
                                                     {backtestResult.benchmark_diff >= 0 ? '+' : ''}{backtestResult.benchmark_diff}%
                                                 </span>
@@ -531,34 +531,34 @@ const StrategyBuilder = () => {
 
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 mb-8">
                                             <div className="p-6 glass-card rounded-2xl border-white/5">
-                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">2-Year Win Rate</p>
-                                                <p className="text-3xl font-mono font-black text-white">{backtestResult.win_rate}%</p>
+                                                <p className="text-[9px] font-black text-text-dim uppercase tracking-widest mb-2">2-Year Win Rate</p>
+                                                <p className="text-3xl font-mono font-black text-text-main">{backtestResult.win_rate}%</p>
                                             </div>
                                             <div className="p-6 glass-card rounded-2xl border-white/5">
-                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Total Profit</p>
+                                                <p className="text-[9px] font-black text-text-dim uppercase tracking-widest mb-2">Total Profit</p>
                                                 <p className={`text-3xl font-mono font-black ${backtestResult.total_profit >= 0 ? 'text-success' : 'text-danger'}`}>
                                                     {backtestResult.total_profit}%
                                                 </p>
                                             </div>
                                             <div className="p-6 glass-card rounded-2xl border-white/5">
-                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Total Trades</p>
+                                                <p className="text-[9px] font-black text-text-dim uppercase tracking-widest mb-2">Total Trades</p>
                                                 <p className="text-3xl font-mono font-black text-primary">{backtestResult.total_trades}</p>
                                             </div>
                                         </div>
 
                                         <div className="relative z-10 space-y-4">
-                                            <h6 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Recent Test Results</h6>
+                                            <h6 className="text-[10px] font-black text-text-dim uppercase tracking-[0.2em] px-1">Recent Test Results</h6>
                                             <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                                                 {backtestResult.trade_log?.map((trade: any, i: number) => (
-                                                    <div key={i} className="flex justify-between items-center p-4 bg-[#050507]/60 border border-white/5 rounded-xl hover:border-white/10 transition-colors">
+                                                    <div key={i} className="flex justify-between items-center p-4 bg-background/60 border border-white/5 rounded-xl hover:border-white/10 transition-colors">
                                                         <div className="flex items-center gap-4">
                                                             <div className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${trade.type === 'LONG' || trade.type === 'BUY' ? 'bg-success/20 text-success' : 'bg-danger/20 text-danger'}`}>
                                                                 {trade.type}
                                                             </div>
-                                                            <span className="text-[10px] font-mono text-slate-500">{trade.date}</span>
+                                                            <span className="text-[10px] font-mono text-text-dim">{trade.date}</span>
                                                         </div>
                                                         <div className="flex items-center gap-6">
-                                                            <span className="text-[10px] font-mono text-white font-bold">${trade.price}</span>
+                                                            <span className="text-[10px] font-mono text-text-main font-bold">${trade.price}</span>
                                                             <span className={`text-[10px] font-mono font-black ${trade.result === 'WIN' || trade.pnl > 0 ? 'text-success' : 'text-danger'}`}>
                                                                 {trade.pnl > 0 ? '+' : ''}{trade.pnl}%
                                                             </span>
@@ -569,7 +569,7 @@ const StrategyBuilder = () => {
                                         </div>
 
                                         <div className="mt-8 pt-6 border-t border-white/5 relative z-10">
-                                            <p className="text-[10px] text-slate-400 font-serif italic text-center leading-relaxed px-10">
+                                            <p className="text-[10px] text-text-dim font-serif italic text-center leading-relaxed px-10">
                                                 "{backtestResult.summary}"
                                             </p>
                                         </div>
@@ -579,14 +579,14 @@ const StrategyBuilder = () => {
                             {/* Chart Screenshots Section */}
                             <div className="mt-10 space-y-4">
                                 <div className="flex justify-between items-center">
-                                    <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                                    <h3 className="text-sm font-black text-text-main uppercase tracking-widest flex items-center gap-2">
                                         <span className="material-symbols-outlined text-primary text-lg">insert_photo</span>
                                         How It Looks on Chart
                                     </h3>
-                                    <span className="text-[10px] text-slate-500 font-bold uppercase">{existingImages.length + chartImages.length}/3 Images</span>
+                                    <span className="text-[10px] text-text-dim font-bold uppercase">{existingImages.length + chartImages.length}/3 Images</span>
                                 </div>
 
-                                <p className="text-[10px] text-slate-600 italic">Upload up to 3 screenshots showing what your strategy looks like on the chart.</p>
+                                <p className="text-[10px] text-text-dim italic">Upload up to 3 screenshots showing what your strategy looks like on the chart.</p>
 
                                 {/* Existing Images */}
                                 <div className="grid grid-cols-3 gap-4">
@@ -594,7 +594,7 @@ const StrategyBuilder = () => {
                                         <div key={idx} className="relative group rounded-2xl overflow-hidden border-2 border-white/10 hover:border-primary/50 transition-all">
                                             <img src={img as string} alt={`Chart ${idx + 1}`} className="w-full h-28 object-cover group-hover:scale-105 transition-transform duration-500" />
                                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                <span className="text-[10px] text-white font-bold uppercase">Saved</span>
+                                                <span className="text-[10px] text-text-main font-bold uppercase">Saved</span>
                                             </div>
                                         </div>
                                     ))}
@@ -607,10 +607,10 @@ const StrategyBuilder = () => {
                                                 onClick={() => handleRemoveChartImage(idx)}
                                                 className="absolute top-2 right-2 size-6 bg-danger rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                                             >
-                                                <span className="material-symbols-outlined text-white text-sm">close</span>
+                                                <span className="material-symbols-outlined text-text-main text-sm">close</span>
                                             </button>
                                             <div className="absolute bottom-0 left-0 right-0 bg-primary/90 py-1 text-center">
-                                                <span className="text-[9px] text-white font-bold uppercase">New</span>
+                                                <span className="text-[9px] text-text-main font-bold uppercase">New</span>
                                             </div>
                                         </div>
                                     ))}
@@ -637,7 +637,7 @@ const StrategyBuilder = () => {
                                     <button
                                         onClick={handleUploadChartImages}
                                         disabled={uploadingImages}
-                                        className="w-full py-3 bg-primary text-white rounded-xl font-black text-xs uppercase tracking-widest hover:bg-opacity-90 transition-all disabled:opacity-50"
+                                        className="w-full py-3 bg-primary text-text-main rounded-xl font-black text-xs uppercase tracking-widest hover:bg-opacity-90 transition-all disabled:opacity-50"
                                     >
                                         {uploadingImages ? 'Uploading...' : `Upload ${chartImages.length} Image${chartImages.length > 1 ? 's' : ''}`}
                                     </button>

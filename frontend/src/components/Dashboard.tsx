@@ -111,7 +111,7 @@ const Dashboard = () => {
 
     if (loading) return (
         <div className="flex items-center justify-center h-full">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-success"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
         </div>
     );
 
@@ -120,10 +120,10 @@ const Dashboard = () => {
             {/* Welcome Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">
+                    <h1 className="text-3xl md:text-4xl font-black text-text-main tracking-tight">
                         {getGreeting()}, <span className="text-primary">{user?.username || 'Trader'}</span>
                     </h1>
-                    <p className="text-slate-500 text-sm mt-1">
+                    <p className="text-text-dim text-sm mt-1">
                         {new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                     </p>
                 </div>
@@ -136,12 +136,12 @@ const Dashboard = () => {
 
             {/* Real-time Ticker Bar */}
             {prices.length > 0 && (
-                <div className="bg-[#050507] border border-white/5 rounded-xl p-3 overflow-hidden">
+                <div className="bg-surface border border-border rounded-xl p-3 overflow-hidden">
                     <div className="flex gap-8 animate-marquee whitespace-nowrap">
                         {prices.map((p, i) => (
                             <div key={i} className="flex gap-2 items-center">
-                                <span className="text-slate-400 font-mono text-xs uppercase">{p.symbol}</span>
-                                <span className="font-bold font-mono text-white text-sm">{p.lastPrice}</span>
+                                <span className="text-text-dim font-mono text-xs uppercase">{p.symbol}</span>
+                                <span className="font-bold font-mono text-text-main text-sm">{p.lastPrice}</span>
                                 <span className={`text-xs font-bold ${parseFloat(p.priceChangePercent) >= 0 ? 'text-success' : 'text-danger'}`}>
                                     {parseFloat(p.priceChangePercent) >= 0 ? '▲' : '▼'} {Math.abs(parseFloat(p.priceChangePercent)).toFixed(2)}%
                                 </span>
@@ -150,8 +150,8 @@ const Dashboard = () => {
                         {/* Duplicate for seamless scroll */}
                         {prices.map((p, i) => (
                             <div key={`dup-${i}`} className="flex gap-2 items-center">
-                                <span className="text-slate-400 font-mono text-xs uppercase">{p.symbol}</span>
-                                <span className="font-bold font-mono text-white text-sm">{p.lastPrice}</span>
+                                <span className="text-text-dim font-mono text-xs uppercase">{p.symbol}</span>
+                                <span className="font-bold font-mono text-text-main text-sm">{p.lastPrice}</span>
                                 <span className={`text-xs font-bold ${parseFloat(p.priceChangePercent) >= 0 ? 'text-success' : 'text-danger'}`}>
                                     {parseFloat(p.priceChangePercent) >= 0 ? '▲' : '▼'} {Math.abs(parseFloat(p.priceChangePercent)).toFixed(2)}%
                                 </span>
@@ -233,7 +233,7 @@ const Dashboard = () => {
                         Recent Activity
                     </h3>
                     {recentTrades.length === 0 ? (
-                        <p className="text-slate-600 text-sm text-center py-8">No trades yet. Start logging!</p>
+                        <p className="text-text-dim text-sm text-center py-8">No trades yet. Start logging!</p>
                     ) : (
                         <div className="space-y-3">
                             {recentTrades.map(trade => (
@@ -245,8 +245,8 @@ const Dashboard = () => {
                                             </span>
                                         </div>
                                         <div>
-                                            <p className="text-white text-xs font-bold">{trade.symbol || 'Trade'}</p>
-                                            <p className="text-slate-500 text-[10px]">{new Date(trade.created_at).toLocaleDateString()}</p>
+                                            <p className="text-text-main text-xs font-bold">{trade.symbol || 'Trade'}</p>
+                                            <p className="text-text-dim text-[10px]">{new Date(trade.created_at).toLocaleDateString()}</p>
                                         </div>
                                     </div>
                                     <p className={`font-mono font-bold text-sm ${(trade.pnl || 0) >= 0 ? 'text-success' : 'text-danger'}`}>
@@ -275,23 +275,23 @@ const Dashboard = () => {
                                         <stop offset="95%" stopColor="#4ade80" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.5} />
                                 <XAxis
                                     dataKey="date"
-                                    stroke="#ffffff30"
+                                    stroke="var(--text-dim)"
                                     tick={{ fontSize: 10 }}
                                     axisLine={false}
                                     tickLine={false}
                                 />
                                 <YAxis
-                                    stroke="#ffffff30"
+                                    stroke="var(--text-dim)"
                                     tick={{ fontSize: 10 }}
                                     axisLine={false}
                                     tickLine={false}
                                     tickFormatter={(val) => `$${val}`}
                                 />
                                 <Tooltip
-                                    contentStyle={{ backgroundColor: '#111', border: '1px solid #ffffff10', borderRadius: '8px' }}
+                                    contentStyle={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '8px' }}
                                     itemStyle={{ color: '#4ade80', fontSize: '12px' }}
                                 />
                                 <Area

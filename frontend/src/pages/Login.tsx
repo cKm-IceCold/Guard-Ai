@@ -41,15 +41,16 @@ const Login = () => {
             {/* Background Aesthetics */}
             <div className="absolute inset-0 bg-grid opacity-30"></div>
             <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] -z-10"></div>
-
-                    <h1 className="text-4xl font-black text-white tracking-tighter mb-2 italic">GUARD AI</h1>
+            <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-1000">
+                <div className="text-center mb-10">
+                    <h1 className="text-4xl font-black text-text-main tracking-tighter mb-2 italic">GUARD AI</h1>
                     <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.4em] font-black opacity-60">Welcome back</p>
                 </div>
 
                 <div className="glass-card shadow-2xl p-10 rounded-3xl relative overflow-hidden group">
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent"></div>
 
-                    <h2 className="text-sm font-black text-white mb-8 uppercase tracking-widest text-center">
+                    <h2 className="text-sm font-black text-text-main mb-8 uppercase tracking-widest text-center">
                         {mode === 'login' ? 'Sign In' : 'Create Account'}
                     </h2>
 

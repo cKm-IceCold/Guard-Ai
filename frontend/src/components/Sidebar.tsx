@@ -1,4 +1,5 @@
 import { useAuthStore } from '../store/useAuthStore';
+import { useTheme } from '../context/ThemeContext';
 
 interface SidebarProps {
     activeTab: string;
@@ -9,6 +10,7 @@ interface SidebarProps {
 
 const Sidebar = ({ activeTab, setActiveTab, isVisible, setIsVisible }: SidebarProps) => {
     const { logout } = useAuthStore();
+    const { theme, toggleTheme } = useTheme();
 
     const menuItems = [
         { id: 'dashboard', icon: 'dashboard', label: 'Home' },
@@ -33,13 +35,13 @@ const Sidebar = ({ activeTab, setActiveTab, isVisible, setIsVisible }: SidebarPr
                     <div className="size-8 rounded-lg bg-primary/20 flex items-center justify-center border border-primary/20">
                         <span className="material-symbols-outlined text-primary text-xl">shield</span>
                     </div>
-                    <span className="font-black text-white text-sm tracking-tighter italic">GUARD AI</span>
+                    <span className="font-black text-text-main text-sm tracking-tighter italic">GUARD AI</span>
                 </div>
                 <button
                     onClick={() => setIsVisible(!isVisible)}
                     className="size-10 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 active:scale-95 transition-all"
                 >
-                    <span className="material-symbols-outlined text-white">
+                    <span className="material-symbols-outlined text-text-main">
                         {isVisible ? 'close' : 'menu'}
                     </span>
                 </button>
@@ -56,14 +58,14 @@ const Sidebar = ({ activeTab, setActiveTab, isVisible, setIsVisible }: SidebarPr
             {/* Main Sidebar */}
             <aside className={`
                 fixed inset-y-0 left-0 z-[70]
-                w-72 bg-[#050507] border-r border-white/5 flex flex-col h-full
+                w-72 bg-background border-r border-border flex flex-col h-full
                 transition-all duration-500 ease-in-out
                 ${isVisible ? 'translate-x-0' : '-translate-x-full'}
             `}>
                 {/* Desktop/Global Toggle Button (positioned inside sidebar when open) */}
                 <button
                     onClick={() => setIsVisible(false)}
-                    className="absolute -right-12 top-6 size-10 hidden md:flex items-center justify-center rounded-r-xl bg-[#050507] border border-l-0 border-white/5 text-slate-500 hover:text-white transition-colors"
+                    className="absolute -right-12 top-6 size-10 hidden md:flex items-center justify-center rounded-r-xl bg-background border border-l-0 border-border text-slate-500 hover:text-text-main transition-colors"
                 >
                     <span className="material-symbols-outlined">menu_open</span>
                 </button>
@@ -75,7 +77,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVisible, setIsVisible }: SidebarPr
                             <span className="material-symbols-outlined text-primary text-3xl font-light">shield</span>
                         </div>
                         <div>
-                            <h1 className="text-xl font-black text-white tracking-tighter italic leading-none">GUARD AI</h1>
+                            <h1 className="text-xl font-black text-text-main tracking-tighter italic leading-none">GUARD AI</h1>
                             <p className="text-[9px] text-slate-600 font-mono tracking-widest mt-1">TERM_V1.5</p>
                         </div>
                     </div>
@@ -91,7 +93,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVisible, setIsVisible }: SidebarPr
                                 w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group relative
                                 ${activeTab === item.id
                                     ? 'bg-primary text-black font-black shadow-lg shadow-primary/20'
-                                    : 'text-slate-500 hover:bg-white/5 hover:text-white'}
+                                    : 'text-slate-500 hover:bg-surface/5 hover:text-text-main'}
                             `}
                         >
                             <span className={`material-symbols-outlined text-2xl ${activeTab === item.id ? 'text-black' : 'group-hover:text-primary transition-colors'}`}>
@@ -106,8 +108,20 @@ const Sidebar = ({ activeTab, setActiveTab, isVisible, setIsVisible }: SidebarPr
                     ))}
                 </nav>
 
-                {/* Footer / Logout */}
-                <div className="p-6 border-t border-white/5 space-y-4">
+                {/* Footer / Themes / Logout */}
+                <div className="p-6 border-t border-border space-y-4">
+                    <button
+                        onClick={toggleTheme}
+                        className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-slate-500 hover:bg-primary/10 hover:text-primary transition-all group"
+                    >
+                        <span className="material-symbols-outlined text-2xl group-hover:rotate-90 transition-transform">
+                            {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+                        </span>
+                        <span className="text-[11px] uppercase tracking-[0.2em]">
+                            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                        </span>
+                    </button>
+
                     <button
                         onClick={() => logout()}
                         className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-slate-500 hover:bg-danger/10 hover:text-danger transition-all group"
@@ -115,7 +129,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVisible, setIsVisible }: SidebarPr
                         <span className="material-symbols-outlined text-2xl group-hover:rotate-12 transition-transform">logout</span>
                         <span className="text-[11px] uppercase tracking-[0.2em]">Logout</span>
                     </button>
-                    <div className="px-6 py-4 rounded-2xl bg-slate-900/50 border border-white/5">
+                    <div className="px-6 py-4 rounded-2xl bg-surface/50 border border-border">
                         <div className="flex items-center gap-3">
                             <div className="size-2 rounded-full bg-success animate-pulse"></div>
                             <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest">System Active</span>
@@ -128,7 +142,7 @@ const Sidebar = ({ activeTab, setActiveTab, isVisible, setIsVisible }: SidebarPr
             {!isVisible && (
                 <button
                     onClick={() => setIsVisible(true)}
-                    className="fixed left-0 top-6 size-10 hidden md:flex items-center justify-center rounded-r-xl bg-[#050507] border border-l-0 border-white/5 text-slate-500 hover:text-white transition-colors z-[80]"
+                    className="fixed left-0 top-6 size-10 hidden md:flex items-center justify-center rounded-r-xl bg-background border border-l-0 border-border text-slate-500 hover:text-text-main transition-colors z-[80]"
                 >
                     <span className="material-symbols-outlined">menu</span>
                 </button>

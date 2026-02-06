@@ -12,6 +12,7 @@ import PsychologyDashboard from './components/PsychologyDashboard';
 import ConnectBroker from './components/ConnectBroker';
 import PublicProfile from './pages/PublicProfile';
 import { NotificationProvider } from './components/NotificationProvider';
+import { ThemeProvider } from './context/ThemeContext';
 import './index.css';
 
 /**
@@ -44,7 +45,7 @@ const PrivateApp = () => {
   );
 
   return (
-    <div className="flex h-screen bg-background text-slate-200 overflow-hidden font-sans relative">
+    <div className="flex h-screen bg-background text-text-main overflow-hidden font-sans relative">
       <NotificationProvider />
       {/* Background Glows */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] -z-10 animate-pulse"></div>
@@ -73,19 +74,18 @@ const PrivateApp = () => {
   );
 };
 
-/**
- * App Entry Point with Router
- */
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public Route: Shareable Profile */}
-        <Route path="/u/:username" element={<PublicProfile />} />
-        {/* Private Routes: Everything else */}
-        <Route path="/*" element={<PrivateApp />} />
-      </Routes>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public Route: Shareable Profile */}
+          <Route path="/u/:username" element={<PublicProfile />} />
+          {/* Private Routes: Everything else */}
+          <Route path="/*" element={<PrivateApp />} />
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 
