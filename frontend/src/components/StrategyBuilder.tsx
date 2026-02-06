@@ -83,7 +83,7 @@ const StrategyBuilder = () => {
             setSavedStrategies(data);
         } catch (error) {
             console.error("Failed to fetch strategies:", error);
-            notify.error("Intelligence failure: Could not load strategems.");
+            notify.error("Intelligence failure: Could not load strategies.");
         }
     };
 
@@ -135,7 +135,7 @@ const StrategyBuilder = () => {
         try {
             const results = await strategyService.backtest(selectedStrategy.id);
             setBacktestResult(results); // Assuming setBacktestResult is the correct setter for backtest data
-            notify.success("Intelligence Sweep Complete.");
+            notify.success("Backtest Complete.");
         } catch (error) {
             console.error(error);
             notify.error("Backtest failed: Market simulation interrupted.");
@@ -285,9 +285,9 @@ const StrategyBuilder = () => {
                 <div>
                     <h2 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
                         <span className="material-symbols-outlined text-primary text-4xl">psychology</span>
-                        STRATEGY LAB
+                        MY STRATEGIES
                     </h2>
-                    <p className="text-slate-500 font-mono text-sm mt-1 uppercase tracking-widest">AI Strategy Helper v2.0</p>
+                    <p className="text-slate-500 font-mono text-sm mt-1 uppercase tracking-widest">AI Assistant</p>
                 </div>
                 <div className="flex items-center gap-2 text-xs font-mono font-bold">
                     <span className="text-slate-600 uppercase">Limit:</span>
@@ -410,7 +410,7 @@ const StrategyBuilder = () => {
                                     <span className={`material-symbols-outlined ${loading ? 'animate-spin' : 'group-hover:rotate-12 transition-transform'}`}>
                                         {loading ? 'sync' : 'bolt'}
                                     </span>
-                                    {loading ? 'AI IS BUILDING YOUR RULES...' : 'CREATE TRADE CHECKLIST'}
+                                    {loading ? 'AI IS WORKING...' : 'GENERATE CHECKLIST'}
                                 </span>
                             </button>
                         </div>
@@ -489,7 +489,7 @@ const StrategyBuilder = () => {
                                             <span className="material-symbols-outlined text-primary text-xl">smart_toy</span>
                                         </div>
                                         <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em]">
-                                            AI Strategy Validator is Online.
+                                            AI Assistant is Ready.
                                         </p>
                                     </div>
                                     <button
@@ -498,7 +498,7 @@ const StrategyBuilder = () => {
                                         disabled={backtesting}
                                     >
                                         <span className="material-symbols-outlined text-lg">precision_manufacturing</span>
-                                        {backtesting ? 'AI ROBOT IS TRADING...' : 'RUN BACKTEST ROBOT'}
+                                        {backtesting ? 'TESTING IN PROGRESS...' : 'BACKTEST STRATEGY'}
                                     </button>
                                 </div>
                             )}
@@ -515,7 +515,7 @@ const StrategyBuilder = () => {
                                             <div>
                                                 <h5 className="text-xl font-black text-white uppercase tracking-tighter flex items-center gap-2">
                                                     <span className="material-symbols-outlined text-primary">analytics</span>
-                                                    Systematic 2-Year Analysis
+                                                    2-Year Performance Test
                                                 </h5>
                                                 <p className="text-[10px] text-slate-500 font-mono uppercase tracking-widest mt-1">
                                                     Scope: {backtestResult.test_period?.start} — {backtestResult.test_period?.end} ({backtestResult.test_period?.total_candles} Candles Analyzed)
@@ -535,19 +535,19 @@ const StrategyBuilder = () => {
                                                 <p className="text-3xl font-mono font-black text-white">{backtestResult.win_rate}%</p>
                                             </div>
                                             <div className="p-6 glass-card rounded-2xl border-white/5">
-                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Net Systematic Profit</p>
+                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Total Profit</p>
                                                 <p className={`text-3xl font-mono font-black ${backtestResult.total_profit >= 0 ? 'text-success' : 'text-danger'}`}>
                                                     {backtestResult.total_profit}%
                                                 </p>
                                             </div>
                                             <div className="p-6 glass-card rounded-2xl border-white/5">
-                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Trades Calculated</p>
+                                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Total Trades</p>
                                                 <p className="text-3xl font-mono font-black text-primary">{backtestResult.total_trades}</p>
                                             </div>
                                         </div>
 
                                         <div className="relative z-10 space-y-4">
-                                            <h6 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Simulation Representative Log</h6>
+                                            <h6 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] px-1">Recent Test Results</h6>
                                             <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                                                 {backtestResult.trade_log?.map((trade: any, i: number) => (
                                                     <div key={i} className="flex justify-between items-center p-4 bg-[#050507]/60 border border-white/5 rounded-xl hover:border-white/10 transition-colors">

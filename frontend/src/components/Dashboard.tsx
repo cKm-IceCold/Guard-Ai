@@ -129,7 +129,7 @@ const Dashboard = () => {
                 </div>
                 <div className="flex items-center gap-3">
                     <div className={`px-4 py-2 rounded-xl border text-xs font-bold uppercase tracking-widest ${riskProfile?.is_locked ? 'border-danger text-danger bg-danger/5' : 'border-success text-success bg-success/5'}`}>
-                        {riskProfile?.is_locked ? '🔒 Locked' : '✓ Ready to Trade'}
+                        {riskProfile?.is_locked ? '🔒 Locked' : '✓ Ready'}
                     </div>
                 </div>
             </div>
@@ -162,10 +162,10 @@ const Dashboard = () => {
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                {/* Account Sentinel Status */}
+                {/* System Status */}
                 <div className="lg:col-span-1 glass-card p-6 group">
                     <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-secondary-text uppercase tracking-widest text-xs font-bold">Sentinel Protocol</h3>
+                        <h3 className="text-secondary-text uppercase tracking-widest text-xs font-bold">Safety Status</h3>
                         <div className={`size-3 rounded-full ${riskProfile?.is_locked ? 'bg-danger animate-pulse' : 'bg-success shadow-[0_0_10px_#4ade80]'}`}></div>
                     </div>
 
@@ -176,7 +176,7 @@ const Dashboard = () => {
                                 <p className="text-secondary-text text-[10px] leading-tight">{riskProfile.lock_reason}</p>
                             </div>
                             <div>
-                                <p className="text-secondary-text text-[10px] uppercase font-bold mb-1">Unlock sequence in:</p>
+                                <p className="text-secondary-text text-[10px] uppercase font-bold mb-1">Unlocks in:</p>
                                 <LockCountdown lockedAt={riskProfile.locked_at} onComplete={refreshData} />
                             </div>
                         </div>
@@ -188,7 +188,7 @@ const Dashboard = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-secondary-text text-[10px] uppercase font-bold mb-1">Daily Cap</p>
+                                    <p className="text-secondary-text text-[10px] uppercase font-bold mb-1">Daily Trades</p>
                                     <p className="text-xl font-mono font-bold text-success">{riskProfile?.trades_today}/{riskProfile?.max_trades_daily}</p>
                                 </div>
                                 <div className="text-right">
@@ -205,7 +205,7 @@ const Dashboard = () => {
                 {/* Key Metrics Grid */}
                 <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="glass-card p-6 flex flex-col justify-between">
-                        <p className="text-secondary-text uppercase tracking-widest text-[10px] font-bold">Win Probability</p>
+                        <p className="text-secondary-text uppercase tracking-widest text-[10px] font-bold">Win Rate</p>
                         <p className="text-4xl font-mono font-black border-l-4 border-success pl-4 leading-none">{stats?.win_rate || 0}%</p>
                         <p className="text-secondary-text text-[10px] mt-2 italic">Based on {stats?.total_trades || 0} verified entries</p>
                     </div>

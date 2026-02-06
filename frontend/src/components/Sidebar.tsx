@@ -11,13 +11,13 @@ const Sidebar = ({ activeTab, setActiveTab, isVisible, setIsVisible }: SidebarPr
     const { logout } = useAuthStore();
 
     const menuItems = [
-        { id: 'dashboard', icon: 'dashboard', label: 'Command Center' },
-        { id: 'risk', icon: 'gpp_maybe', label: 'Risk Guardian' },
-        { id: 'strategy', icon: 'psychology', label: 'Strategy Lab' },
+        { id: 'dashboard', icon: 'dashboard', label: 'Home' },
+        { id: 'risk', icon: 'gpp_maybe', label: 'Safety Rules' },
+        { id: 'strategy', icon: 'psychology', label: 'My Strategies' },
         { id: 'execution', icon: 'checklist_rtl', label: 'Execution Mode' },
         { id: 'journal', icon: 'history_edu', label: 'Trade Journal' },
         { id: 'analytics', icon: 'monitoring', label: 'Psychology' },
-        { id: 'broker', icon: 'link', label: 'Broker Connect' },
+        { id: 'broker', icon: 'link', label: 'Connect Broker' },
     ];
 
     const handleTabChange = (id: string) => {
@@ -113,12 +113,12 @@ const Sidebar = ({ activeTab, setActiveTab, isVisible, setIsVisible }: SidebarPr
                         className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-slate-500 hover:bg-danger/10 hover:text-danger transition-all group"
                     >
                         <span className="material-symbols-outlined text-2xl group-hover:rotate-12 transition-transform">logout</span>
-                        <span className="text-[11px] uppercase tracking-[0.2em]">Terminate</span>
+                        <span className="text-[11px] uppercase tracking-[0.2em]">Logout</span>
                     </button>
                     <div className="px-6 py-4 rounded-2xl bg-slate-900/50 border border-white/5">
                         <div className="flex items-center gap-3">
                             <div className="size-2 rounded-full bg-success animate-pulse"></div>
-                            <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest">Enforcement Live</span>
+                            <span className="text-[8px] font-mono text-slate-500 uppercase tracking-widest">System Active</span>
                         </div>
                     </div>
                 </div>

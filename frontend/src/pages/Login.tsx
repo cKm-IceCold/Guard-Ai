@@ -26,9 +26,9 @@ const Login = () => {
                 const data = await authService.login(email, password);
                 login(data.access, data.refresh);
             }
-            notify.success(mode === 'login' ? "Access Granted. Welcome back." : "Registration Successful.");
+            notify.success(mode === 'login' ? "Login Successful." : "Account Created.");
         } catch (err: any) {
-            const msg = err.response?.data?.detail || err.response?.data?.error || "Connection failed. System offline.";
+            const msg = err.response?.data?.detail || err.response?.data?.error || "Login failed. Please try again.";
             setError(msg);
             notify.error(msg);
         } finally {
@@ -42,11 +42,8 @@ const Login = () => {
             <div className="absolute inset-0 bg-grid opacity-30"></div>
             <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px] -z-10"></div>
 
-            <div className="w-full max-w-md animate-in fade-in zoom-in-95 duration-1000">
-                <div className="text-center mb-10">
-
                     <h1 className="text-4xl font-black text-white tracking-tighter mb-2 italic">GUARD AI</h1>
-                    <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.4em] font-black opacity-60">Traders Only</p>
+                    <p className="text-[10px] text-slate-500 font-mono uppercase tracking-[0.4em] font-black opacity-60">Welcome back</p>
                 </div>
 
                 <div className="glass-card shadow-2xl p-10 rounded-3xl relative overflow-hidden group">
@@ -73,7 +70,7 @@ const Login = () => {
                                         value={username}
                                         onChange={(e) => setUsername(e.target.value)}
                                         className="terminal-input w-full pl-12"
-                                        placeholder="EliteTrader"
+                                        placeholder="Username"
                                         required
                                     />
                                 </div>
@@ -116,7 +113,7 @@ const Login = () => {
                             <span className="material-symbols-outlined animate-glide">
                                 {mode === 'login' ? 'login' : 'how_to_reg'}
                             </span>
-                            {loading ? 'VERIFYING...' : (mode === 'login' ? 'LOGIN TO DASHBOARD' : 'AUTHORIZE NEW ACCOUNT')}
+                            {loading ? 'VERIFYING...' : (mode === 'login' ? 'SIGN IN' : 'CREATE ACCOUNT')}
                         </button>
 
                         <div className="pt-6 border-t border-border mt-8 text-center">
@@ -132,10 +129,10 @@ const Login = () => {
                 </div>
 
                 <p className="mt-8 text-[9px] text-center text-slate-700 font-mono tracking-widest uppercase opacity-40">
-                    Proprietary Algorithm Enforcement Module
+                    Safe Trading Terminal
                 </p>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

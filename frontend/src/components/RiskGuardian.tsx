@@ -109,7 +109,7 @@ const RiskGuardian = () => {
     if (loading && !profile) return (
         <div className="h-96 flex flex-col items-center justify-center p-8 text-center bg-surface border border-[#27272a] rounded-2xl">
             <div className="size-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-            <p className="text-sm text-slate-500 font-mono uppercase tracking-widest">Accessing Risk Vault...</p>
+            <p className="text-sm text-slate-500 font-mono uppercase tracking-widest">Loading Safety Settings...</p>
         </div>
     );
 
@@ -122,7 +122,7 @@ const RiskGuardian = () => {
                 <div>
                     <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                         <span className="material-symbols-outlined text-primary">shield</span>
-                        Risk Manager
+                        Safety Settings
                     </h2>
                     <p className="text-slate-400">Protecting Your Account</p>
                 </div>
@@ -147,13 +147,13 @@ const RiskGuardian = () => {
                 <div className="glass-card rounded-3xl p-8 mb-8 animate-in slide-in-from-top-4 duration-500 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-full h-1 bg-primary"></div>
                     <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Adjust Risk Settings</h3>
+                        <h3 className="text-sm font-black text-white uppercase tracking-widest">Change Safety Limits</h3>
                         <button onClick={() => setShowSettings(false)} className="material-symbols-outlined text-slate-500 hover:text-white">close</button>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Max Daily Loss (USD)</label>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Daily Loss Limit ($)</label>
                             <input
                                 type="number"
                                 value={newMaxLoss}
@@ -163,7 +163,7 @@ const RiskGuardian = () => {
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Max Trades Per Day</label>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Max Daily Trades</label>
                             <input
                                 type="number"
                                 value={newMaxTrades}
@@ -242,7 +242,7 @@ const RiskGuardian = () => {
 
                     <div className="flex justify-between items-start mb-6">
                         <h3 className="font-bold text-slate-400 text-xs uppercase tracking-widest flex items-center gap-2">
-                            Total Daily Loss
+                            Daily Loss
                         </h3>
                     </div>
 
@@ -268,7 +268,7 @@ const RiskGuardian = () => {
                         </div>
 
                         <div className="p-4 bg-white/[0.02] rounded-xl border border-white/5 flex justify-between items-center">
-                            <span className="text-xs text-slate-500 uppercase font-bold">Safe Room Remaining</span>
+                            <span className="text-xs text-slate-500 uppercase font-bold">Safe to Lose</span>
                             <span className="font-mono font-bold text-white">
                                 ${(parseFloat(profile.max_daily_loss) - parseFloat(profile.current_daily_loss)).toFixed(2)}
                             </span>
@@ -307,7 +307,7 @@ const RiskGuardian = () => {
                             <span>{profile.trades_today}</span>
                         </div>
                         <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
-                            <span>Capacity Locked</span>
+                            <span>Limit Used</span>
                             <span className={profile.trades_today >= profile.max_trades_per_day ? 'text-danger' : 'text-success'}>
                                 {((profile.trades_today / profile.max_trades_per_day) * 100).toFixed(0)}%
                             </span>
@@ -338,7 +338,7 @@ const RiskGuardian = () => {
                     className="flex items-center gap-2 text-[10px] font-bold text-slate-500 hover:text-white transition-colors uppercase tracking-widest border border-[#27272a] px-6 py-2 rounded-full"
                 >
                     <span className="material-symbols-outlined text-sm">refresh</span>
-                    Refresh Integrity
+                    Refresh Status
                 </button>
             </div>
         </div>
