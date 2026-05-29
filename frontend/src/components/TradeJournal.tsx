@@ -25,6 +25,13 @@ interface Stats {
     avg_win: string | null;
     avg_loss: string | null;
     discipline_rate: number;
+    profit_factor: number;
+    avg_rr: number;
+    max_drawdown: number;
+    best_trade: number;
+    worst_trade: number;
+    max_win_streak: number;
+    max_loss_streak: number;
 }
 
 const TradeJournal = () => {
@@ -384,12 +391,43 @@ const TradeJournal = () => {
                     </h2>
                     <p className="text-text-dim">Review your performance and discipline history</p>
                 </div>
-                <button
-                    onClick={refreshData}
-                    className="p-2 hover:bg-white/5 rounded-lg text-text-dim transition-colors"
-                >
-                    <span className="material-symbols-outlined">refresh</span>
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => {
+                            if (trades.length === 0) return;
+                            const headers = ['Date', 'Strategy', 'Status', 'Result', 'PnL', 'Followed Plan', 'Notes'];
+                            const rows = trades.map(t => [
+                                new Date(t.created_at).toLocaleDateString(),
+                                t.strategy_name,
+                                t.status,
+                                t.result || '',
+                                t.pnl || '0',
+                                t.followed_plan ? 'Yes' : 'No',
+                                `"${(t.notes || '').replace(/"/g, '""')}"`
+                            ]);
+                            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+                            const blob = new Blob([csv], { type: 'text/csv' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `guard-ai-journal-${new Date().toISOString().split('T')[0]}.csv`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                            notify.success('Journal exported to CSV.');
+                        }}
+                        className="flex items-center gap-1 px-3 py-2 bg-surface border border-border rounded-lg text-text-dim hover:text-text-main hover:border-primary/50 transition-all text-[10px] font-bold uppercase tracking-widest"
+                        title="Export to CSV"
+                    >
+                        <span className="material-symbols-outlined text-sm">download</span>
+                        CSV
+                    </button>
+                    <button
+                        onClick={refreshData}
+                        className="p-2 hover:bg-white/5 rounded-lg text-text-dim transition-colors"
+                    >
+                        <span className="material-symbols-outlined">refresh</span>
+                    </button>
+                </div>
             </header>
 
             {/* Stats Overview */}
@@ -415,6 +453,38 @@ const TradeJournal = () => {
                     <div className="bg-surface border border-border p-5 rounded-2xl">
                         <p className="text-[10px] font-bold text-text-dim uppercase tracking-widest mb-1">Total Signals</p>
                         <p className="text-3xl font-mono font-bold text-text-main">{stats.total_trades}</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Advanced Metrics */}
+            {stats && stats.total_trades > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                    <div className="bg-surface border border-border p-4 rounded-2xl text-center">
+                        <p className="text-[9px] font-bold text-text-dim uppercase tracking-widest mb-2">Profit Factor</p>
+                        <p className={`text-xl font-mono font-black ${(stats.profit_factor || 0) >= 1.5 ? 'text-success' : (stats.profit_factor || 0) >= 1 ? 'text-yellow-400' : 'text-danger'}`}>
+                            {stats.profit_factor || '—'}
+                        </p>
+                    </div>
+                    <div className="bg-surface border border-border p-4 rounded-2xl text-center">
+                        <p className="text-[9px] font-bold text-text-dim uppercase tracking-widest mb-2">Avg R:R</p>
+                        <p className="text-xl font-mono font-black text-primary">{stats.avg_rr || '—'}</p>
+                    </div>
+                    <div className="bg-surface border border-border p-4 rounded-2xl text-center">
+                        <p className="text-[9px] font-bold text-text-dim uppercase tracking-widest mb-2">Max Drawdown</p>
+                        <p className="text-xl font-mono font-black text-danger">{stats.max_drawdown ? `-$${stats.max_drawdown}` : '—'}</p>
+                    </div>
+                    <div className="bg-surface border border-border p-4 rounded-2xl text-center">
+                        <p className="text-[9px] font-bold text-text-dim uppercase tracking-widest mb-2">Best Trade</p>
+                        <p className="text-xl font-mono font-black text-success">{stats.best_trade ? `+$${stats.best_trade}` : '—'}</p>
+                    </div>
+                    <div className="bg-surface border border-border p-4 rounded-2xl text-center">
+                        <p className="text-[9px] font-bold text-text-dim uppercase tracking-widest mb-2">🔥 Win Streak</p>
+                        <p className="text-xl font-mono font-black text-success">{stats.max_win_streak || 0}</p>
+                    </div>
+                    <div className="bg-surface border border-border p-4 rounded-2xl text-center">
+                        <p className="text-[9px] font-bold text-text-dim uppercase tracking-widest mb-2">❄️ Loss Streak</p>
+                        <p className="text-xl font-mono font-black text-danger">{stats.max_loss_streak || 0}</p>
                     </div>
                 </div>
             )}

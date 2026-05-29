@@ -36,8 +36,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
         """
         strategy = self.get_object()
         
-        # 1. Fetch historical data (BTC-USD)
-        history = self._get_full_2yr_history()
+        # 1. Fetch historical data (Default: BTC-USD)
+        symbol = request.data.get('symbol', 'BTC-USD')
+        history = self._get_market_history(symbol)
         if not history:
             return Response({"error": "Failed to fetch market history from Yahoo Finance"}, status=503)
 
@@ -47,7 +48,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
         
         # 3. Process the backtest results using AI quantitative analysis (Pro with Flash fallback)
         history_meta = f"""
-        DATASET OVERVIEW (2 MONTHS BTC/USDT 1D):
+        DATASET OVERVIEW (2 MONTHS {symbol} 1D):
         - Start Price: ${float(history[0][4])}
         - End Price: ${float(history[-1][4])}
         """
@@ -61,7 +62,7 @@ class StrategyViewSet(viewsets.ModelViewSet):
             
         return Response(json.loads(result_str))
 
-    def _get_full_2yr_history(self):
+    def _get_market_history(self, symbol="BTC-USD"):
         """
         Fetches 60 days of historical data using Yahoo Finance.
         Exclusively uses yfinance for stability during the hackathon.
@@ -70,9 +71,9 @@ class StrategyViewSet(viewsets.ModelViewSet):
         from datetime import datetime
         
         try:
-            print("DEBUG: Fetching historical data via Yahoo Finance...")
+            print(f"DEBUG: Fetching historical data for {symbol} via Yahoo Finance...")
             # yfinance uses 'BTC-USD'
-            data = yf.download("BTC-USD", period="60d", interval="1d", progress=False)
+            data = yf.download(symbol, period="60d", interval="1d", progress=False)
             
             if not data.empty:
                 normalized = []

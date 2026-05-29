@@ -65,6 +65,7 @@ const StrategyBuilder = () => {
     // BACKTEST STATE: Performance simulations on historical data.
     const [backtestResult, setBacktestResult] = useState<any>(null);
     const [backtesting, setBacktesting] = useState(false);
+    const [backtestSymbol, setBacktestSymbol] = useState('BTC-USD');
 
     // CHART IMAGES STATE: Screenshots showing strategy on chart.
     const [chartImages, setChartImages] = useState<File[]>([]);
@@ -124,21 +125,21 @@ const StrategyBuilder = () => {
     };
 
     /**
-     * AI BACKTESTING:
-     * Sends the strategy logic back to the AI for a systematic execution 
-     * simulation against 2 years of historical market data.
+     * AI STRATEGY ANALYSIS:
+     * Sends the strategy logic back to the AI for a systematic analysis 
+     * against 60 days of real historical market data.
      */
     const handleBacktest = async () => {
         if (!selectedStrategy) return;
         setBacktesting(true);
         setBacktestResult(null);
         try {
-            const results = await strategyService.backtest(selectedStrategy.id);
+            const results = await strategyService.backtest(selectedStrategy.id, backtestSymbol);
             setBacktestResult(results); // Assuming setBacktestResult is the correct setter for backtest data
-            notify.success("Backtest Complete.");
+            notify.success("AI Analysis Complete.");
         } catch (error) {
             console.error(error);
-            notify.error("Backtest failed: Market simulation interrupted.");
+            notify.error("AI Analysis failed. Please try again.");
         } finally {
             setBacktesting(false); // Keeping setBacktesting as per original state variable
         }
@@ -483,6 +484,7 @@ const StrategyBuilder = () => {
                             </div>
 
                             {!isEditing && (
+                                <>
                                 <div className="mt-10 p-6 bg-primary/5 border border-primary/10 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4">
                                     <div className="flex items-center gap-3">
                                         <div className="size-8 bg-primary/10 rounded-lg flex items-center justify-center">
@@ -498,12 +500,26 @@ const StrategyBuilder = () => {
                                         disabled={backtesting}
                                     >
                                         <span className="material-symbols-outlined text-lg">precision_manufacturing</span>
-                                        {backtesting ? 'TESTING IN PROGRESS...' : 'BACKTEST STRATEGY'}
+                                        {backtesting ? 'AI ANALYZING...' : 'AI STRATEGY ANALYSIS'}
                                     </button>
                                 </div>
+                                <div className="mt-4 flex items-center justify-end gap-2">
+                                    <label className="text-[10px] font-black text-text-dim uppercase tracking-widest">Asset:</label>
+                                    <input 
+                                        type="text" 
+                                        value={backtestSymbol}
+                                        onChange={(e) => setBacktestSymbol(e.target.value)}
+                                        className="bg-background border border-border rounded-lg px-2 py-1 text-xs font-mono text-text-main w-24 text-center focus:ring-1 focus:ring-primary outline-none uppercase"
+                                        placeholder="BTC-USD"
+                                    />
+                                    <span className="text-[9px] text-text-dim hidden md:inline">
+                                        (Yahoo Finance Ticker)
+                                    </span>
+                                </div>
+                                </>
                             )}
 
-                            {/* Backtest Results Card */}
+                            {/* AI Analysis Results Card */}
                             {backtestResult && (
                                 <div className="mt-12 animate-in slide-in-from-top-4 duration-700">
                                     <div className="p-8 border-2 border-primary/20 bg-primary/[0.02] rounded-[32px] shadow-2xl relative overflow-hidden">
@@ -515,14 +531,14 @@ const StrategyBuilder = () => {
                                             <div>
                                                 <h5 className="text-xl font-black text-text-main uppercase tracking-tighter flex items-center gap-2">
                                                     <span className="material-symbols-outlined text-primary">analytics</span>
-                                                    2-Year Performance Test
+                                                    60-Day AI Analysis
                                                 </h5>
                                                 <p className="text-[10px] text-text-dim font-mono uppercase tracking-widest mt-1">
-                                                    Scope: {backtestResult.test_period?.start} — {backtestResult.test_period?.end} ({backtestResult.test_period?.total_candles} Candles Analyzed)
+                                                    {backtestSymbol} · 60 Days · {backtestResult.test_period?.total_candles || backtestResult.total_trades} Data Points
                                                 </p>
                                             </div>
                                             <div className="px-4 py-2 bg-background border border-border rounded-xl">
-                                                <span className="text-[10px] font-black text-text-dim uppercase tracking-widest mr-2">Bench vs BTC:</span>
+                                                <span className="text-[10px] font-black text-text-dim uppercase tracking-widest mr-2">vs {backtestSymbol}:</span>
                                                 <span className={`text-[10px] font-black uppercase ${backtestResult.benchmark_diff >= 0 ? 'text-success' : 'text-danger'}`}>
                                                     {backtestResult.benchmark_diff >= 0 ? '+' : ''}{backtestResult.benchmark_diff}%
                                                 </span>
@@ -531,7 +547,7 @@ const StrategyBuilder = () => {
 
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 mb-8">
                                             <div className="p-6 glass-card rounded-2xl border-white/5">
-                                                <p className="text-[9px] font-black text-text-dim uppercase tracking-widest mb-2">2-Year Win Rate</p>
+                                                <p className="text-[9px] font-black text-text-dim uppercase tracking-widest mb-2">Win Rate</p>
                                                 <p className="text-3xl font-mono font-black text-text-main">{backtestResult.win_rate}%</p>
                                             </div>
                                             <div className="p-6 glass-card rounded-2xl border-white/5">
@@ -547,7 +563,7 @@ const StrategyBuilder = () => {
                                         </div>
 
                                         <div className="relative z-10 space-y-4">
-                                            <h6 className="text-[10px] font-black text-text-dim uppercase tracking-[0.2em] px-1">Recent Test Results</h6>
+                                            <h6 className="text-[10px] font-black text-text-dim uppercase tracking-[0.2em] px-1">AI-Projected Trade Log</h6>
                                             <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                                                 {backtestResult.trade_log?.map((trade: any, i: number) => (
                                                     <div key={i} className="flex justify-between items-center p-4 bg-background/60 border border-white/5 rounded-xl hover:border-white/10 transition-colors">
@@ -572,6 +588,11 @@ const StrategyBuilder = () => {
                                             <p className="text-[10px] text-text-dim font-serif italic text-center leading-relaxed px-10">
                                                 "{backtestResult.summary}"
                                             </p>
+                                            <div className="mt-4 p-3 bg-yellow-500/5 border border-yellow-500/10 rounded-xl text-center">
+                                                <p className="text-[9px] text-yellow-500/80 uppercase tracking-widest font-bold">
+                                                    ⚠️ AI-Generated Projection — Not a computed backtest. Results are estimated by Gemini based on strategy logic and historical price data. Past performance does not guarantee future results.
+                                                </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

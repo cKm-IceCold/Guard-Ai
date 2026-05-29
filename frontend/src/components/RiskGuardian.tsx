@@ -53,6 +53,247 @@ const RiskGuardian = () => {
     const [updating, setUpdating] = useState(false);
     const [message, setMessage] = useState('');
 
+    const downloadMQL5File = () => {
+        const mql5Code = `//+------------------------------------------------------------------+
+//|                                              GuardAI_Bridge.mq5  |
+//|                                  Copyright 2026, Guard AI        |
+//|                                             https://guard-ai.io  |
+//+------------------------------------------------------------------+
+#property copyright "Copyright 2026, Guard AI"
+#property link      "https://guard-ai.io"
+#property version   "1.00"
+#property strict
+
+// Input Parameters
+input string   BackendURL = "http://127.0.0.1:8000/api/risk/mt5-sync/";
+input string   AuthToken  = "your_jwt_token_here";
+input int      SyncIntervalSeconds = 5;
+
+// Global Variables
+datetime lastSyncTime = 0;
+bool isLocked = false;
+string lockReason = "";
+
+//+------------------------------------------------------------------+
+//| Expert initialization function                                   |
+//+------------------------------------------------------------------+
+int OnInit()
+{
+   Print("--------------------------------------------------");
+   Print("Guard AI Active Discipline Agent Initialized.");
+   Print("Connection Endpoint: ", BackendURL);
+   Print("--------------------------------------------------");
+   
+   EventSetTimer(SyncIntervalSeconds);
+   SyncWithBackend();
+   return(INIT_SUCCEEDED);
+}
+
+//+------------------------------------------------------------------+
+//| Expert deinitialization function                                 |
+//+------------------------------------------------------------------+
+void OnDeinit(const int reason)
+{
+   EventKillTimer();
+   Print("Guard AI Discipline Agent Stopped.");
+}
+
+//+------------------------------------------------------------------+
+//| Timer event function for background polling                       |
+//+------------------------------------------------------------------+
+void OnTimer()
+{
+   SyncWithBackend();
+   if(isLocked) {
+      EnforceTerminalLock();
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Monitors live order ticks to prevent manual bypass while locked  |
+//+------------------------------------------------------------------+
+void OnTrade()
+{
+   if(isLocked) {
+      Print("[Guard AI] CRITICAL: Order activity detected while locked! Liquidating...");
+      EnforceTerminalLock();
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Sends account statistics to Django and updates lock states       |
+//+------------------------------------------------------------------+
+void SyncWithBackend()
+{
+   char postData[];
+   char result[];
+   string resultHeaders;
+   
+   string positionsJson = "";
+   int totalPositions = PositionsTotal();
+   int activeCount = 0;
+   
+   for(int i = 0; i < totalPositions; i++)
+   {
+      string symbol = PositionGetSymbol(i);
+      ulong ticket = PositionGetInteger(POSITION_TICKET);
+      
+      if(ticket > 0 && symbol != "")
+      {
+         double pnl = PositionGetDouble(POSITION_PROFIT);
+         long type = PositionGetInteger(POSITION_TYPE); // 0 = Buy, 1 = Sell
+         
+         if(activeCount > 0) positionsJson += ",";
+         positionsJson += StringFormat("{\\"ticket\\": %d, \\"symbol\\": \\"%s\\", \\"pnl\\": %.2f, \\"type\\": %d}", ticket, symbol, pnl, type);
+         activeCount++;
+      }
+   }
+   
+   string jsonPayload = StringFormat(
+      "{\\"balance\\": %.2f, \\"equity\\": %.2f, \\"positions\\": [%s]}",
+      AccountInfoDouble(ACCOUNT_BALANCE),
+      AccountInfoDouble(ACCOUNT_EQUITY),
+      positionsJson
+   );
+   
+   StringToCharArray(jsonPayload, postData, 0, WHOLE_ARRAY, CP_UTF8);
+   
+   string headers = "Content-Type: application/json\\r\\n";
+   headers += "Authorization: Token " + AuthToken + "\\r\\n";
+   
+   int timeout = 4000;
+   ResetLastError();
+   int responseCode = WebRequest(
+      "POST",
+      BackendURL,
+      headers,
+      timeout,
+      postData,
+      result,
+      resultHeaders
+   );
+   
+   if(responseCode == 200)
+   {
+      string responseText = CharArrayToString(result, 0, WHOLE_ARRAY, CP_UTF8);
+      if(StringFind(responseText, "\\"is_locked\\":true") != -1)
+      {
+         isLocked = true;
+         int reasonIndex = StringFind(responseText, "\\"lock_reason\\":\\"");
+         if(reasonIndex != -1)
+         {
+            int start = reasonIndex + 15;
+            int end = StringFind(responseText, "\\"", start);
+            if(end != -1)
+            {
+               lockReason = StringSubstr(responseText, start, end - start);
+            }
+         }
+         else
+         {
+            lockReason = "Drawdown or Trade Limit Exceeded.";
+         }
+      }
+      else
+      {
+         isLocked = false;
+         lockReason = "";
+      }
+   }
+   else
+   {
+      Print("[Guard AI] Sync Connection Failure. Code: ", responseCode);
+   }
+}
+
+//+------------------------------------------------------------------+
+//| Hard Enforcement: Closes all active trades and cancels pending  |
+//+------------------------------------------------------------------+
+void EnforceTerminalLock()
+{
+   MqlTradeRequest request;
+   MqlTradeResult  tradeResult;
+   
+   int totalPositions = PositionsTotal();
+   for(int i = totalPositions - 1; i >= 0; i--)
+   {
+      string symbol = PositionGetSymbol(i);
+      ulong ticket = PositionGetInteger(POSITION_TICKET);
+      
+      if(ticket > 0 && symbol != "")
+      {
+         ZeroMemory(request);
+         ZeroMemory(tradeResult);
+         
+         double volume = PositionGetDouble(POSITION_VOLUME);
+         long type = PositionGetInteger(POSITION_TYPE);
+         
+         request.action = TRADE_ACTION_DEAL;
+         request.position = ticket;
+         request.symbol = symbol;
+         request.volume = volume;
+         request.magic = 99999;
+         request.deviation = 10;
+         
+         if(type == POSITION_TYPE_BUY)
+         {
+            request.type = ORDER_TYPE_SELL;
+            request.price = SymbolInfoDouble(symbol, SYMBOL_BID);
+         }
+         else
+         {
+            request.type = ORDER_TYPE_BUY;
+            request.price = SymbolInfoDouble(symbol, SYMBOL_ASK);
+         }
+         
+         ResetLastError();
+         OrderSend(request, tradeResult);
+      }
+   }
+   
+   int totalOrders = OrdersTotal();
+   for(int i = totalOrders - 1; i >= 0; i--)
+   {
+      ulong ticket = OrderGetTicket(i);
+      if(ticket > 0)
+      {
+         ZeroMemory(request);
+         ZeroMemory(tradeResult);
+         
+         request.action = TRADE_ACTION_REMOVE;
+         request.order = ticket;
+         
+         ResetLastError();
+         OrderSend(request, tradeResult);
+      }
+   }
+   
+   Comment(StringFormat(
+      "=========================================\\n"+
+      "   GUARD AI: CAPITAL PROTECTION BLOCK   \\n"+
+      "=========================================\\n"+
+      "Lock Status: ACTIVE\\n"+
+      "Reason: %s\\n\\n"+
+      "Trading is disabled to protect your account.\\n"+
+      "Unlock is scheduled automatically tomorrow.\\n"+
+      "=========================================",
+      lockReason
+   ));
+   
+   PlaySound("alert.wav");
+}
+`;
+        const blob = new Blob([mql5Code], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'GuardAI_Bridge.mq5';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
     /**
      * Refreshes the risk profile and stats from the API.
      * Invoked on mount and after settings updates.
@@ -315,13 +556,84 @@ const RiskGuardian = () => {
                 </div>
             </div>
 
+            {/* MetaTrader 5 EA Integration Card */}
+            <div className="p-8 bg-surface rounded-2xl border border-border shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                    <span className="material-symbols-outlined text-9xl">terminal</span>
+                </div>
+
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-blue-500"></div>
+
+                <h3 className="font-bold text-text-dim text-xs uppercase tracking-widest mb-6 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary text-sm">settings_ethernet</span>
+                    MetaTrader 5 Real-Time Safeguard
+                </h3>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
+                    <div className="lg:col-span-2 space-y-4">
+                        <p className="text-sm text-text-main leading-relaxed">
+                            Protect your balance directly from your broker account. Drag our zero-cost **Safeguard Expert Advisor (EA)** onto your MetaTrader 5 charts. It works seamlessly with desktop terminals and mobile platforms (via VPS cloud setups).
+                        </p>
+                        
+                        <div className="space-y-2.5">
+                            <h4 className="text-[10px] font-black text-text-main uppercase tracking-widest">Installation Instructions:</h4>
+                            <ul className="text-xs text-text-dim space-y-2 list-decimal list-inside px-1">
+                                <li>Click <strong className="text-primary cursor-pointer hover:underline" onClick={downloadMQL5File}>Download EA Bridge</strong> and save the file.</li>
+                                <li>In MT5, go to <strong>File ➔ Open Data Folder</strong>, then paste the file into <strong>MQL5 ➔ Experts</strong>.</li>
+                                <li>In Navigator panel, right-click <em>Expert Advisors</em> ➔ <em>Refresh</em>, then drag <strong>GuardAI_Bridge</strong> onto any chart.</li>
+                                <li>Enable connection: Go to <strong>Tools ➔ Options ➔ Expert Advisors</strong>, check <em>Allow WebRequest</em> and add your server URL.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col justify-between p-6 bg-background rounded-2xl border border-border">
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-black text-text-dim uppercase tracking-widest">Bridge Connection</span>
+                                <div className="flex items-center gap-1.5 bg-surface border border-border px-2.5 py-1 rounded-full">
+                                    <div className={`size-2 rounded-full ${profile.is_locked ? 'bg-danger' : 'bg-success animate-pulse'}`}></div>
+                                    <span className={`text-[9px] font-mono font-bold ${profile.is_locked ? 'text-danger' : 'text-success'}`}>
+                                        {profile.is_locked ? 'LOCKED' : 'SYNC ACTIVE'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-text-dim">Enforcement Mode</span>
+                                    <span className="font-mono text-text-main font-bold uppercase">Automated EA</span>
+                                </div>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-text-dim">Sync Endpoint</span>
+                                    <span className="font-mono text-[10px] text-primary truncate max-w-[130px]" title={`${window.location.origin}/api/risk/mt5-sync/`}>
+                                        {window.location.origin.replace('http://', '').replace('https://', '')}/...
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={downloadMQL5File}
+                            className="btn-primary w-full py-2.5 mt-6 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(59,130,246,0.2)] hover:shadow-[0_0_20px_rgba(59,130,246,0.4)] transition-all"
+                        >
+                            <span className="material-symbols-outlined text-sm">download</span>
+                            Download EA Bridge
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             {/* Performance Ledger Integration */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                     { label: 'Win Rate', val: `${stats?.win_rate || 0}%`, icon: 'speed' },
                     { label: 'Discipline', val: `${stats?.discipline_rate || 0}%`, icon: 'psychology' },
                     { label: 'Net Yield', val: `$${stats?.total_pnl || 0}`, icon: 'payments' },
-                    { label: 'Avg Win', val: `$${stats?.avg_win || 0}`, icon: 'trending_up' }
+                    { label: 'Profit Factor', val: `${stats?.profit_factor || '—'}`, icon: 'balance' },
+                    { label: 'Avg R:R', val: `${stats?.avg_rr || '—'}`, icon: 'compare_arrows' },
+                    { label: 'Max Drawdown', val: stats?.max_drawdown ? `-$${stats.max_drawdown}` : '—', icon: 'trending_down' },
+                    { label: '🔥 Best Streak', val: `${stats?.max_win_streak || 0}`, icon: 'local_fire_department' },
+                    { label: '❄️ Worst Streak', val: `${stats?.max_loss_streak || 0}`, icon: 'ac_unit' }
                 ].map((s, i) => (
                     <div key={i} className="bg-surface border border-border p-4 rounded-2xl flex flex-col items-center">
                         <span className="material-symbols-outlined text-text-dim text-sm mb-2">{s.icon}</span>

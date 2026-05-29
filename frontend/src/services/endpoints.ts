@@ -56,8 +56,8 @@ export const strategyService = {
     },
 
     /** Triggers the AI historical backtest engine for a specific strategy. */
-    async backtest(id: number) {
-        const response = await api.post(`/strategies/strategies/${id}/backtest/`);
+    async backtest(id: number, symbol: string = 'BTC-USD') {
+        const response = await api.post(`/strategies/strategies/${id}/backtest/`, { symbol });
         return response.data;
     },
 
@@ -154,6 +154,12 @@ export const journalService = {
     /** Resets the entire account history. DANGER: irreversible. */
     async fullReset() {
         const response = await api.post('/journal/trades/full-reset/');
+        return response.data;
+    },
+
+    /** Fetches real-time behavior alerts detecting revenge trading, overtrading, and plan slippage. */
+    async getBehaviorAlerts() {
+        const response = await api.get('/journal/trades/behavior-alerts/');
         return response.data;
     }
 };
