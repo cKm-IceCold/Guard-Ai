@@ -154,7 +154,6 @@ const PsychologyDashboard = () => {
     const [insights, setInsights] = useState<AIInsights | null>(null);
     const [loading, setLoading] = useState(true);
     const [loadingAI, setLoadingAI] = useState(false);
-    const [aiError, setAiError] = useState(false);
 
     useEffect(() => {
         fetchAnalytics();
@@ -176,13 +175,11 @@ const PsychologyDashboard = () => {
 
     const fetchAIInsights = async () => {
         setLoadingAI(true);
-        setAiError(false);
         try {
             const aiData = await journalService.getInsights();
             setInsights(aiData);
         } catch (e) {
             console.error('Failed to fetch AI insights:', e);
-            setAiError(true);
             // Safe fallback so nothing crashes
             setInsights({
                 impulse_alerts: ['AI analysis unavailable. Check your API key or log more trades.'],
