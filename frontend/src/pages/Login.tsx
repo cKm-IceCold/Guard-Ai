@@ -65,7 +65,7 @@ const Login = () => {
                             <div>
                                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Display Name</label>
                                 <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-lg">person</span>
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-lg w-6 h-6 overflow-hidden select-none flex items-center justify-center">person</span>
                                     <input
                                         type="text"
                                         value={username}
@@ -80,7 +80,7 @@ const Login = () => {
                         <div>
                             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Email Address</label>
                             <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-lg">alternate_email</span>
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-lg w-6 h-6 overflow-hidden select-none flex items-center justify-center">alternate_email</span>
                                 <input
                                     type="text"
                                     value={email}
@@ -94,7 +94,7 @@ const Login = () => {
                         <div>
                             <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2 px-1">Password</label>
                             <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-lg">lock</span>
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-slate-700 text-lg w-6 h-6 overflow-hidden select-none flex items-center justify-center">lock</span>
                                 <input
                                     type="password"
                                     value={password}
