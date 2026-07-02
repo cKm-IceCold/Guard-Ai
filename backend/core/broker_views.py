@@ -22,7 +22,7 @@ class BrokerConnectionSerializer(serializers.ModelSerializer):
         model = BrokerConnection
         fields = [
             'id', 'broker_type', 'nickname', 'api_key', 'api_secret',
-            'mt_server', 'mt_login', 'is_active', 'last_synced_at', 
+            'mt_server', 'mt_login', 'mt_version', 'is_active', 'last_synced_at', 
             'created_at', 'is_connected'
         ]
         read_only_fields = ['id', 'last_synced_at', 'created_at', 'is_connected']

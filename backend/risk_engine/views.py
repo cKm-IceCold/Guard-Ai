@@ -63,8 +63,19 @@ class RiskProfileViewSet(viewsets.GenericViewSet, mixins.RetrieveModelMixin, mix
 
 class MT5SyncView(APIView):
     """
-    HTTP POST endpoint called by the Guard AI MQL5 Expert Advisor.
-    Synchronizes MT5 active positions with the django Trade journal and checks RiskProfile rules.
+    HTTP POST endpoint called by the Guard AI MQL5 Expert Advisor every 5 seconds.
+
+    PROP-FIRM STYLE ENFORCEMENT:
+    ─────────────────────────────
+    1.  EA sends: balance, equity (balance + floating P&L), open positions list.
+    2.  On first sync of the day, we record `daily_start_equity` as the baseline.
+    3.  Live Drawdown = daily_start_equity − current_equity  (includes floating losses).
+    4.  If drawdown breaches max_daily_loss ($) OR max_daily_loss_pct (%) → LOCK.
+    5.  Over-trade limit checks run on every sync too.
+    6.  Response tells the EA: is_locked, current drawdown, limits — EA acts immediately.
+
+    This mirrors exactly how FTMO / The5ers enforce rules at the server level,
+    but running inside the trader's own MT5 terminal via the EA bridge.
     """
     permission_classes = [permissions.IsAuthenticated]
 
@@ -72,86 +83,143 @@ class MT5SyncView(APIView):
         user = request.user
         data = request.data
 
-        balance = Decimal(str(data.get("balance", "0.0")))
-        equity = Decimal(str(data.get("equity", "0.0")))
+        # ── Parse EA payload ────────────────────────────────────────────────
+        try:
+            balance = Decimal(str(data.get("balance", "0.0")))
+            equity  = Decimal(str(data.get("equity",  "0.0")))
+        except Exception:
+            return Response({"error": "Invalid balance/equity values"}, status=status.HTTP_400_BAD_REQUEST)
+
         positions = data.get("positions", [])
 
-        # 1. Fetch risk profile
+        # ── Load / auto-create Risk Profile ────────────────────────────────
         try:
-            risk_profile = user.risk_profile
+            profile = user.risk_profile
         except RiskProfile.DoesNotExist:
-            risk_profile = RiskProfile.objects.create(user=user, max_daily_loss=200.00)
+            profile = RiskProfile.objects.create(user=user, max_daily_loss=200.00)
 
-        # 2. Check for daily resets
-        risk_profile.check_discipline()
+        # ── Daily reset check (new trading day → reset baseline) ────────────
+        profile.check_discipline()   # handles date-based resets internally
 
-        # 3. Handle live daily drawdown calculations
-        # Establish start-of-day equity baseline if none is registered
-        if not hasattr(risk_profile, 'starting_daily_equity') or risk_profile.current_daily_loss == Decimal("0.00"):
-            risk_profile.starting_daily_equity = balance
-            risk_profile.save()
+        now = timezone.now()
 
-        current_loss = risk_profile.starting_daily_equity - equity
-        if current_loss > 0:
-            risk_profile.current_daily_loss = current_loss
-        else:
-            risk_profile.current_daily_loss = Decimal("0.00")
-        
-        risk_profile.save()
+        # ── Establish start-of-day equity baseline ──────────────────────────
+        # Only set once per day (daily_start_equity is reset to 0 at midnight by reset_daily_stats)
+        if profile.daily_start_equity == Decimal("0.00") and equity > Decimal("0.00"):
+            profile.daily_start_equity = equity
 
-        # 4. Process open positions reported by EA
+        # ── Update live equity tracking ─────────────────────────────────────
+        profile.current_live_equity = equity
+        profile.last_ea_sync = now
+
+        # ── CORE DRAWDOWN CALCULATION (Prop-Firm Style) ─────────────────────
+        # Live drawdown = money lost from start of day including ALL open floating P&L
+        live_drawdown = profile.daily_start_equity - equity
+        if live_drawdown < Decimal("0.00"):
+            live_drawdown = Decimal("0.00")   # Equity grown → no drawdown
+
+        profile.current_daily_loss = live_drawdown
+        profile.save()
+
+        # ── HARD ENFORCEMENT: Check all limits ──────────────────────────────
+        if not profile.is_locked:
+
+            # 1. ABSOLUTE $ DRAWDOWN LIMIT  (e.g. max $200 loss)
+            if live_drawdown >= profile.max_daily_loss:
+                profile.lock_account(
+                    f"Daily loss limit hit: ${float(live_drawdown):.2f} lost "
+                    f"(limit ${float(profile.max_daily_loss):.2f}). "
+                    f"Trading suspended for 12 hours."
+                )
+
+            # 2. PERCENTAGE DRAWDOWN LIMIT  (e.g. 5% of start equity like FTMO)
+            elif profile.daily_start_equity > Decimal("0.00"):
+                drawdown_pct = (live_drawdown / profile.daily_start_equity) * Decimal("100")
+                if drawdown_pct >= profile.max_daily_loss_pct:
+                    profile.lock_account(
+                        f"Daily drawdown limit hit: {float(drawdown_pct):.2f}% "
+                        f"(limit {float(profile.max_daily_loss_pct):.2f}%). "
+                        f"Trading suspended for 12 hours."
+                    )
+
+            # 3. OVER-TRADING LIMIT
+            elif profile.trades_today >= profile.max_trades_per_day:
+                profile.lock_account(
+                    f"Max daily trades reached: {profile.trades_today} trades "
+                    f"(limit {profile.max_trades_per_day})."
+                )
+
+        # ── Sync open positions → Trade journal ─────────────────────────────
         incoming_tickets = []
         for pos in positions:
-            ticket = str(pos.get("ticket"))
-            symbol = pos.get("symbol", "UNKNOWN")
-            side_num = pos.get("type", 0) # 0 = Buy, 1 = Sell in MQL
-            side = "BUY" if side_num == 0 else "SELL"
-            pnl = Decimal(str(pos.get("pnl", "0.00")))
+            ticket = str(pos.get("ticket", ""))
+            if not ticket:
+                continue
 
+            symbol   = pos.get("symbol", "UNKNOWN")
+            side     = "BUY" if pos.get("type", 0) == 0 else "SELL"
+            lot_size = Decimal(str(pos.get("lots", "0.01")))
+            pos_pnl  = Decimal(str(pos.get("pnl", "0.00")))
             incoming_tickets.append(ticket)
 
-            # Sync position ticket into Trade database
-            trade, trade_created = Trade.objects.get_or_create(
+            trade, created = Trade.objects.get_or_create(
                 user=user,
                 external_id=ticket,
                 defaults={
                     "symbol": symbol,
                     "side": side,
                     "status": "OPEN",
-                    "pnl": pnl,
-                    "followed_plan": True
+                    "pnl": pos_pnl,
+                    "followed_plan": True,
                 }
             )
-
-            if not trade_created:
-                # Update current running profit/loss
-                trade.pnl = pnl
+            if not created:
+                trade.pnl = pos_pnl
                 trade.save()
             else:
-                # Increment metrics for newly detected trades
-                risk_profile.trades_today += 1
-                risk_profile.trades_this_month += 1
-                risk_profile.trades_this_year += 1
-                risk_profile.save()
+                # New position detected — count it
+                profile.trades_today += 1
+                profile.trades_this_month += 1
+                profile.trades_this_year += 1
+                profile.save()
 
-        # 5. Automatically detect CLOSED positions (Self-Healing Set Difference)
-        # Any trade currently marked as 'OPEN' with an external_id that did not arrive is closed.
-        open_trades = Trade.objects.filter(user=user, status="OPEN").exclude(external_id__isnull=True).exclude(external_id="")
-        for open_trade in open_trades:
-            if open_trade.external_id not in incoming_tickets:
-                open_trade.status = "CLOSED"
-                open_trade.result = "WIN" if open_trade.pnl > 0 else ("LOSS" if open_trade.pnl < 0 else "BREAKEVEN")
-                open_trade.save()
+        # ── Self-heal: mark vanished open positions as CLOSED ────────────────
+        orphaned = Trade.objects.filter(
+            user=user, status="OPEN"
+        ).exclude(external_id__isnull=True).exclude(external_id="")
 
-        # 6. Run enforcement and rules evaluation
-        allowed, message = risk_profile.check_discipline()
+        for t in orphaned:
+            if t.external_id not in incoming_tickets:
+                t.status = "CLOSED"
+                t.result = "WIN" if t.pnl > 0 else ("LOSS" if t.pnl < 0 else "BREAKEVEN")
+                t.save()
+
+        # ── Build drawdown % for EA display ────────────────────────────────
+        drawdown_pct = 0.0
+        if profile.daily_start_equity > Decimal("0.00"):
+            drawdown_pct = float(
+                (profile.current_daily_loss / profile.daily_start_equity) * Decimal("100")
+            )
 
         return Response({
-            "is_locked": risk_profile.is_locked,
-            "lock_reason": risk_profile.lock_reason,
-            "current_daily_loss": float(risk_profile.current_daily_loss),
-            "max_daily_loss": float(risk_profile.max_daily_loss),
-            "trades_today": risk_profile.trades_today,
-            "max_trades_per_day": risk_profile.max_trades_per_day
+            # Core lock signal — EA checks this first
+            "is_locked":            profile.is_locked,
+            "lock_reason":          profile.lock_reason or "",
+
+            # Live drawdown data for EA overlay display
+            "current_daily_loss":   float(profile.current_daily_loss),
+            "max_daily_loss":       float(profile.max_daily_loss),
+            "drawdown_pct":         round(drawdown_pct, 2),
+            "max_drawdown_pct":     float(profile.max_daily_loss_pct),
+            "daily_start_equity":   float(profile.daily_start_equity),
+            "current_equity":       float(equity),
+
+            # Trade count data
+            "trades_today":         profile.trades_today,
+            "max_trades_per_day":   profile.max_trades_per_day,
+
+            # EA heartbeat confirmation
+            "sync_status":          "ok",
+            "server_time":          now.isoformat(),
         }, status=status.HTTP_200_OK)
 

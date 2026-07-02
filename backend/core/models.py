@@ -34,7 +34,8 @@ class BrokerConnection(models.Model):
         ('BYBIT', 'Bybit'),
         ('KRAKEN', 'Kraken'),
         ('COINBASE', 'Coinbase'),
-        ('METATRADER', 'MetaTrader 5'),
+        ('METATRADER_CLOUD', 'MetaTrader (Cloud)'),
+        ('METATRADER', 'MetaTrader (Local)'),
         ('OTHER', 'Other Exchange'),
     ]
     
@@ -49,6 +50,8 @@ class BrokerConnection(models.Model):
     # MetaTrader specific fields
     mt_server = models.CharField(max_length=100, blank=True, help_text="e.g., 'ICMarkets-Demo'")
     mt_login = models.CharField(max_length=50, blank=True)
+    mt_version = models.CharField(max_length=10, default='5', help_text="MT version: 4 or 5")
+    mt_account_id = models.CharField(max_length=100, blank=True, help_text="MetaApi internal account ID")
     
     is_active = models.BooleanField(default=True)
     last_synced_at = models.DateTimeField(null=True, blank=True)

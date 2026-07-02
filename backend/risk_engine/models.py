@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.utils import timezone
 from datetime import timedelta
 from django.db import models
@@ -13,10 +14,19 @@ class RiskProfile(models.Model):
     
     # Static Limits (Configurable by user)
     max_daily_loss = models.DecimalField(max_digits=10, decimal_places=2, default=200.00, help_text="Maximum allowed loss per day in USD")
+    max_daily_loss_pct = models.DecimalField(max_digits=5, decimal_places=2, default=5.00, help_text="Max daily drawdown as % of starting equity (e.g. 5.00 = 5%)")
     max_trades_per_day = models.IntegerField(default=5)
     max_trades_monthly = models.IntegerField(default=100)
     max_trades_yearly = models.IntegerField(default=1000)
     
+    # MT5 Live Equity Tracking (Prop-Firm Style)
+    daily_start_equity = models.DecimalField(max_digits=15, decimal_places=2, default=0.00,
+        help_text="Account equity at start of trading day. Set on first EA sync each day.")
+    current_live_equity = models.DecimalField(max_digits=15, decimal_places=2, default=0.00,
+        help_text="Latest equity value reported by the EA (balance + floating P&L)")
+    last_ea_sync = models.DateTimeField(null=True, blank=True,
+        help_text="Timestamp of the last successful EA heartbeat")
+
     # Real-time Performance Tracking
     current_daily_loss = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     trades_today = models.IntegerField(default=0)
@@ -99,6 +109,8 @@ class RiskProfile(models.Model):
         self.lock_reason = None
         self.locked_at = None
         self.last_reset_date = timezone.now().date()
+        # Reset equity baseline so the EA re-establishes it on next sync
+        self.daily_start_equity = Decimal('0.00')
         self.save()
 
     def reset_monthly_stats(self):

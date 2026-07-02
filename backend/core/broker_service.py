@@ -4,6 +4,9 @@ Unified Broker Service with pluggable adapters for Forex & Crypto.
 import ccxt
 from abc import ABC, abstractmethod
 from datetime import datetime
+import requests
+import os
+import time
 
 
 class BaseBrokerAdapter(ABC):
@@ -255,11 +258,149 @@ class MetaTraderAdapter(BaseBrokerAdapter):
         ]
 
 
+class MetaApiAdapter(BaseBrokerAdapter):
+    """
+    Adapter for MetaTrader 4 and 5 using the MetaApi Cloud REST API.
+    Allows connections without needing the MetaTrader terminal running on this machine.
+    """
+    
+    def __init__(self, broker_connection):
+        self.connection = broker_connection
+        self.token = os.environ.get('META_API_TOKEN', '')
+        self.headers = {
+            'auth-token': self.token,
+            'Content-Type': 'application/json'
+        }
+        self.base_url = 'https://mt-provisioning-api-v1.agiliumtrade.agiliumtrade.ai'
+        self.client_url = 'https://mt-client-api-v1.agiliumtrade.agiliumtrade.ai'
+
+    def connect(self) -> bool:
+        if not self.token:
+            raise ValueError("META_API_TOKEN is not configured in .env")
+
+        # 1. If we don't have an account ID, provision one
+        if not self.connection.mt_account_id:
+            payload = {
+                'name': self.connection.nickname or f"MT{self.connection.mt_version} Cloud",
+                'type': 'cloud',
+                'login': self.connection.mt_login,
+                'password': self.connection.api_secret,
+                'server': self.connection.mt_server,
+                'magic': 0,
+                'version': int(self.connection.mt_version)
+            }
+            res = requests.post(f"{self.base_url}/users/current/accounts", json=payload, headers=self.headers)
+            if res.status_code not in [200, 201, 202]:
+                raise ValueError(f"MetaApi Provisioning Failed: {res.text}")
+            
+            data = res.json()
+            self.connection.mt_account_id = data.get('id') or data.get('_id')
+            self.connection.save()
+
+        account_id = self.connection.mt_account_id
+
+        # 2. Deploy the account if not deployed
+        res = requests.get(f"{self.base_url}/users/current/accounts/{account_id}", headers=self.headers)
+        if res.status_code == 200:
+            state = res.json().get('state')
+            if state != 'DEPLOYED':
+                deploy_res = requests.post(f"{self.base_url}/users/current/accounts/{account_id}/deploy", headers=self.headers)
+                if deploy_res.status_code not in [200, 204]:
+                    raise ValueError(f"Failed to deploy MetaApi account: {deploy_res.text}")
+                time.sleep(3) # Give it a moment to boot
+        
+        # 3. Test if it's returning balance (Wait for connection)
+        for _ in range(5):
+            res = requests.get(f"{self.client_url}/users/current/accounts/{account_id}/accountInformation", headers=self.headers)
+            if res.status_code == 200:
+                return True
+            time.sleep(2)
+            
+        raise ValueError("MetaApi Account failed to connect to broker server in time.")
+
+    def get_balance(self) -> dict:
+        if not self.connection.mt_account_id:
+            self.connect()
+            
+        account_id = self.connection.mt_account_id
+        res = requests.get(f"{self.client_url}/users/current/accounts/{account_id}/accountInformation", headers=self.headers)
+        
+        if res.status_code in [404, 503, 500]: # Not connected or booting
+            self.connect() # Attempt to wake it up
+            res = requests.get(f"{self.client_url}/users/current/accounts/{account_id}/accountInformation", headers=self.headers)
+            
+        if res.status_code == 200:
+            data = res.json()
+            return {
+                'balance': data.get('balance', 0),
+                'equity': data.get('equity', 0),
+                'margin': data.get('margin', 0),
+                'free_margin': data.get('freeMargin', 0),
+                'profit': data.get('profit', 0),
+            }
+        return {}
+
+    def get_positions(self) -> list:
+        if not self.connection.mt_account_id:
+            self.connect()
+            
+        account_id = self.connection.mt_account_id
+        res = requests.get(f"{self.client_url}/users/current/accounts/{account_id}/positions", headers=self.headers)
+        if res.status_code == 200:
+            positions = res.json()
+            return [
+                {
+                    'ticket': p.get('id'),
+                    'symbol': p.get('symbol'),
+                    'side': 'BUY' if p.get('type') == 'POSITION_TYPE_BUY' else 'SELL',
+                    'volume': p.get('volume'),
+                    'entry_price': p.get('openPrice'),
+                    'current_price': p.get('currentPrice'),
+                    'profit': p.get('profit'),
+                }
+                for p in positions
+            ]
+        return []
+
+    def get_trade_history(self, since: datetime = None, symbol: str = None) -> list:
+        from datetime import datetime, timedelta
+        if not self.connection.mt_account_id:
+            self.connect()
+            
+        if since is None:
+            since = datetime.now() - timedelta(days=30)
+            
+        account_id = self.connection.mt_account_id
+        start_time = since.strftime('%Y-%m-%d %H:%M:%S.000')
+        end_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.000')
+        
+        url = f"{self.client_url}/users/current/accounts/{account_id}/history-deals/time/{start_time}/{end_time}"
+        res = requests.get(url, headers=self.headers)
+        if res.status_code == 200:
+            deals = res.json()
+            return [
+                {
+                    'ticket': d.get('id'),
+                    'symbol': d.get('symbol', 'UNKNOWN'),
+                    'side': 'BUY' if d.get('type') == 'DEAL_TYPE_BUY' else 'SELL',
+                    'volume': d.get('volume', 0),
+                    'price': d.get('price', 0),
+                    'profit': d.get('profit', 0),
+                    'commission': d.get('commission', 0),
+                    'timestamp': d.get('time'),
+                }
+                for d in deals if d.get('profit', 0) != 0 # Skip deposits/withdrawals
+            ]
+        return []
+
+
 def get_adapter(broker_connection) -> BaseBrokerAdapter:
     """
     Factory function: Returns the correct Adapter implementation based on the user's connection type.
     """
-    if broker_connection.broker_type == 'METATRADER':
+    if broker_connection.broker_type == 'METATRADER_CLOUD':
+        return MetaApiAdapter(broker_connection)
+    elif broker_connection.broker_type == 'METATRADER':
         return MetaTraderAdapter(
             login=broker_connection.mt_login,
             password=broker_connection.api_secret,  # Password is encrypted in storage
